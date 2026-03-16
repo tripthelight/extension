@@ -1,0 +1,16 @@
+{
+  "manifest_version" : 3,
+  "name": "Search Block",
+  "version": "1.0.0",
+  "description": "It hides the channel you don't want to see.",
+  "action": {
+    "default_popup": "index.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*.youtube.com/*"],
+      "js": ["index.js"],
+      "css": ["style.css"]
+    }
+  ]
+}
