@@ -130,6 +130,18 @@ function removeStyle() {
   document.getElementById("btn-blocking-style")?.remove();
 }
 
+const removePrefix = (str) => {
+  return str.includes("/@") ? str.replace("/@", "") : str;
+};
+
+const urlTrim = (str) => str.replace(/\s+/g, "");
+const hasMatched = (arr, str) => arr.some((item) => {
+  return (
+    item.includes(str) ||
+    str.includes(item)
+  );
+});
+
 /* function main() {
   const LONG_SEC = document.querySelectorAll("ytd-video-renderer");
   const SHORT_SEC = document.querySelectorAll("div.ytGridShelfViewModelGridShelfItem");
@@ -250,7 +262,19 @@ function removeStyle() {
 
 
 
-
+function addBlockingChannel(sec) {
+  const CH_URL = sec.querySelector("ytd-channel-name #container #text-container yt-formatted-string a");
+  const CH_URL_STR = CH_URL ? removePrefix(CH_URL.getAttribute("href")): "";
+  
+  const BLOCKING_CHANNEL = window.localStorage.getItem("blockingChannel");
+  const BLOCKING_CHANNEL_PARSE = BLOCKING_CHANNEL ? JSON.parse(BLOCKING_CHANNEL) : [];
+  if (BLOCKING_CHANNEL_PARSE.includes(CH_URL_STR)) {
+    //
+  } else {
+    BLOCKING_CHANNEL_PARSE.push(CH_URL_STR);
+    window.localStorage.setItem("blockingChannel", JSON.stringify(BLOCKING_CHANNEL_PARSE));
+  }
+};
 
 function mainLong(target) {
   VALS.elems.actVod.long = target.closest("ytd-video-renderer");
@@ -263,8 +287,8 @@ window.addEventListener('pageshow', () => {
   addStyle();
 
   document.addEventListener("click", (event) => {
-    const targetShort = event.target.closest("div.shortsLockupViewModelHostOutsideMetadataMenu");
     const targetLong = event.target.closest("yt-icon-button");
+    const targetShort = event.target.closest("div.shortsLockupViewModelHostOutsideMetadataMenu");
     if (targetLong) {
       mainLong(targetLong);
     } else if (targetShort) {
@@ -297,8 +321,11 @@ window.addEventListener('pageshow', () => {
               if (BTN) {
                 BTN.addEventListener("click", () => {
                   const VOD_SEC = VALS.elems.actVod.long;
-                  if (VOD_SEC) VOD_SEC.remove();
-                  VALS.elems.dummy.click();
+                  if (VOD_SEC) {
+                    addBlockingChannel(VOD_SEC);
+                    VOD_SEC.remove();
+                  };
+                  if (VALS.elems.dummy) VALS.elems.dummy.click();
                 });
               } else {
                 VALS.elems.btnBlock.long = document.createElement("button");
@@ -307,8 +334,11 @@ window.addEventListener('pageshow', () => {
                 MENU_ELEM_L.appendChild(VALS.elems.btnBlock.long);
                 VALS.elems.btnBlock.long.addEventListener("click", () => {
                   const VOD_SEC = VALS.elems.actVod.long;
-                  if (VOD_SEC) VOD_SEC.remove();
-                  VALS.elems.dummy.click();
+                  if (VOD_SEC) {
+                    addBlockingChannel(VOD_SEC);
+                    VOD_SEC.remove();
+                  };
+                  if (VALS.elems.dummy) VALS.elems.dummy.click();
                 });
               }
             };
@@ -322,7 +352,7 @@ window.addEventListener('pageshow', () => {
                 BTN.addEventListener("click", () => {
                   const VOD_SEC = VALS.elems.actVod.short;
                   if (VOD_SEC) VOD_SEC.remove();
-                  VALS.elems.dummy.click();
+                  if (VALS.elems.dummy) VALS.elems.dummy.click();
                 });
               } else {
                 VALS.elems.btnBlock.short = document.createElement("button");
@@ -332,10 +362,47 @@ window.addEventListener('pageshow', () => {
                 VALS.elems.btnBlock.short.addEventListener("click", () => {
                   const VOD_SEC = VALS.elems.actVod.short;
                   if (VOD_SEC) VOD_SEC.remove();
-                  VALS.elems.dummy.click();
+                  if (VALS.elems.dummy) VALS.elems.dummy.click();
                 });
               }
             };
+          }
+        }
+      }
+    };
+
+    const BLOCKING_LIST = window.localStorage.getItem("blockingChannel");
+    const BLOCKING_LIST_PARSE = BLOCKING_LIST ? JSON.parse(BLOCKING_LIST) : [];
+    if (BLOCKING_LIST_PARSE.length > 0) {
+      // long form vod
+      const LONG_URL_LIST = document.querySelectorAll("ytd-channel-name #container #text-container yt-formatted-string a");
+      if (LONG_URL_LIST.length > 0) {
+        for (let i = 0; i < BLOCKING_LIST_PARSE.length; i++) {
+          const L = BLOCKING_LIST_PARSE[i];
+          for (let j = 0; j < LONG_URL_LIST.length; j++) {
+            const E = LONG_URL_LIST[j];
+            if (E) {
+              if ((E.getAttribute("href")).includes(L)) {
+                const WRAP = E.closest("ytd-video-renderer");
+                if (WRAP) WRAP.remove();
+              }
+            }
+          }
+        };
+      }
+
+      // short form vod
+
+      // 영상 시청 화면에서 추천되는 vod
+      const RECOM_URL_LIST = document.querySelectorAll("yt-lockup-view-model yt-lockup-metadata-view-model yt-content-metadata-view-model span.yt-core-attributed-string"); 
+      if (RECOM_URL_LIST.length > 0) {
+        for (let i = 0; i < RECOM_URL_LIST.length; i++) {
+          const E = RECOM_URL_LIST[i];
+          if (E) {
+            if (hasMatched(BLOCKING_LIST_PARSE, urlTrim(E.innerText))) {
+              const WRAP = E.closest("yt-lockup-view-model");
+              if (WRAP) WRAP.remove();
+            }
           }
         }
       }
