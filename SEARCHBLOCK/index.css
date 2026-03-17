@@ -1,0 +1,33 @@
+button.btn-blocking {
+  color: var(--yt-spec-text-primary);
+  white-space: nowrap;
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  flex-basis: 0.000000001px;
+  font-family: "Roboto", "Arial", sans-serif;
+  font-size: 1.4rem;
+  line-height: 2rem;
+  font-weight: 400;
+  background-color: transparent;
+  align-items: center;
+  -webkit-font-smoothing: antialiased;
+  --paper-item-min-height: 36px;
+  min-height: var(--paper-item-min-height, 48px);
+  padding: 0 12px 0 16px;
+  border-radius: 0;
+  border: 0 none;
+  cursor: pointer;
+};
+div.blocking-dummy-elem {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  font-size: 1px;
+  line-height: 1px;
+  color: transparent;
+  background-color: transparent;
+  border: 0 none;
+};

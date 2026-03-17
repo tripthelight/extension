@@ -238,7 +238,7 @@ const hasMatched = (arr, str) => arr.some((item) => {
         VALS.elems.btnBlock = document.createElement("button");
         VALS.elems.btnBlock.innerText = "채널 추천 안함";
         VALS.elems.btnBlock.classList.add("btn-block");
-        addStyle();
+        // addStyle();
         MENU_ELEM.appendChild(VALS.elems.btnBlock);
       }
     }, 100);
@@ -283,8 +283,9 @@ function mainShort(target) {
   VALS.elems.actVod.short = target.closest(".ytGridShelfViewModelGridShelfItem");
 };
 
+/*
 window.addEventListener('pageshow', () => {
-  addStyle();
+  // addStyle();
 
   document.addEventListener("click", (event) => {
     const targetLong = event.target.closest("yt-icon-button");
@@ -409,3 +410,4 @@ window.addEventListener('pageshow', () => {
     }
   }, 100);
 });
+*/

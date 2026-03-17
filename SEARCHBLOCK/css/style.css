@@ -1,0 +1,101 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-size: 10px;
+  font-family: Roboto, Arial, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+#container.blocking-channel {
+  box-sizing: border-box;
+  padding: 2em;
+}
+#container.blocking-channel h3 {
+  font-size: 1.8em;
+  line-height: 1.8em;
+}
+#container.blocking-channel .list + h3 {
+  margin-top: 1em;
+}
+#container.blocking-channel p {
+  font-size: 1.2em;
+  line-height: 1.2em;
+  margin-top: 0.4em;
+}
+#container.blocking-channel .btn-blocking {
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  font-size: 1.4em;
+  line-height: 3.6em;
+}
+#container.blocking-channel .ipt-wrap {
+  margin-top: 0.4em;
+}
+#container.blocking-channel .ipt-wrap label {
+  font-size: 1.2em;
+  line-height: 1.2em;
+  margin-top: 0.4em;
+}
+#container.blocking-channel .ipt-wrap .ipt-block {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-start;
+  flex-direction: row;
+  margin-top: 0.4em;
+}
+#container.blocking-channel .ipt-wrap .ipt-block input[type="text"] {
+  flex-grow: 1;
+  border-radius: 0;
+  border: 1px solid var(--color-border);
+  outline: none;
+  font-size: 1.4em;
+  line-height: 1.8em;
+}
+#container.blocking-channel .ipt-wrap .ipt-block button.btn-add {
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  font-size: 1.2em;
+  line-height: 1.2em;
+  box-sizing: border-box;
+  margin-left: 0.2em;
+  width: 3.6em;
+}
+#container.blocking-channel .ipt-wrap .ipt-block button.btn-add:disabled {
+  cursor: default;
+  color: var(--color-text-disabled);
+}
+#container.blocking-channel .ipt-wrap .ipt-block button.btn-del {
+  position: absolute;
+  width: 1.6em;
+  height: 1.6em;
+  right: 5.4em;
+  top: 50%;
+  margin-top: -0.8em;
+  border-radius: 100%;
+  background: var(--color-bg-del);
+}
+#container.blocking-channel .ipt-wrap .ipt-block button.btn-del.hide {
+  display: none;
+}
+#container.blocking-channel .ipt-wrap .ipt-block button.btn-del span {
+  font-size: 1px;
+  line-height: 1px;
+  color: transparent;
+}
+#container.blocking-channel .ipt-wrap .ipt-block button.btn-del::before,
+#container.blocking-channel .ipt-wrap .ipt-block button.btn-del::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2px;
+  height: 1em;
+  background-color: var(--color-bg-del-line);
+}
+#container.blocking-channel .ipt-wrap .ipt-block button.btn-del::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+#container.blocking-channel .ipt-wrap .ipt-block button.btn-del::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}

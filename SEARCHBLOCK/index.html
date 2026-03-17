@@ -1,30 +1,39 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="./css/variables.css" />
+  <link rel="stylesheet" href="./css/reset.css" />
+  <link rel="stylesheet" href="./css/layout.css" />
+  <link rel="stylesheet" href="./css/style.css" />
   <title>Search Block</title>
 </head>
 <body>
   <div id="container" class="blocking-channel">
     <h3>채널명 입력</h3>
-    <p>아래 입력창에 입력한 채널명은 노출되지 않습니다.</p>
-    <div class="list"></div>
-    <div class="ipt-block">
-      <label for="FOBIDDEN_WORD"></label>
-      <input type="text" name="FOBIDDEN_WORD" id="FOBIDDEN_WORD" />
+    <div class="ipt-wrap">
+      <label for="FOBIDDEN_WORD">아래 입력창에 입력한 채널명은 노출되지 않습니다.</label>
+      <div class="ipt-block">
+        <input type="text" name="FOBIDDEN_WORD" id="FOBIDDEN_WORD" />
+        <button type="button" class="btn-del btn-word-del hide" aria-label="클릭 시 현재 작성된 채널명 삭제함"></button>
+        <button type="button" class="btn-add btn-word-add">추가</button>
+      </div>
     </div>
+    <div class="list list-word"></div>
     
     <h3>채널 주소 입력</h3>
-    <p>아래 입력창에 입력한 채널 주소는 노출되지 않습니다.</p>
-    <div class="list"></div>
-    <div class="ipt-block">
-      <label for="FOBIDDEN_URL"></label>
-      <input type="text" name="FOBIDDEN_URL" id="FOBIDDEN_URL" />
+    <div class="ipt-wrap">
+      <label for="FOBIDDEN_URL">아래 입력창에 입력한 채널 주소는 노출되지 않습니다.</label>
+      <div class="ipt-block">
+        <input type="text" name="FOBIDDEN_URL" id="FOBIDDEN_URL" />
+        <button type="button" class="btn-del btn-url-del hide" aria-label="클릭 시 현재 작성된 채널 주소 삭제함"></button>
+        <button type="button" class="btn-add btn-url-add">추가</button>
+      </div>
     </div>
-  
-    <button type="button" class="btn-blocking">START BLOCKING</button>
+    <div class="list list-url"></div>
   </div>
+
+  <script src="./js/script.js"></script>
 </body>
 </html>
