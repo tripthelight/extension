@@ -3,6 +3,8 @@
   "name": "Search Block",
   "version": "1.0.0",
   "description": "It hides the channel you don't want to see.",
+  "permissions": ["storage"],
+  "host_permissions": ["https://www.youtube.com/*"],
   "action": {
     "default_popup": "index.html"
   },

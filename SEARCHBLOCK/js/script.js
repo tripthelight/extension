@@ -1,4 +1,93 @@
 /**
+ * 채널명, 채널주소 삭제 event
+ */
+async function removeChannel(event, _type) {
+  const TARGET = event?.target;
+  if (!TARGET) return;
+  const REMOVE_ELEM = TARGET?.closest("dl");
+  if (!REMOVE_ELEM) return;
+  const REMOVE_DT = REMOVE_ELEM.querySelector("dt");
+  if (!REMOVE_DT) return;
+  const REMOVE_TIT = REMOVE_DT.innerHTML;
+  if (!REMOVE_TIT) return;
+
+  const extStorage =
+    typeof browser !== "undefined" && browser?.storage
+      ? browser.storage
+      : typeof chrome !== "undefined" && chrome?.storage
+        ? chrome.storage
+        : null;
+
+  if (!extStorage) {
+    throw "removeChannel : Extension storage API is not available.";
+  }
+
+  const { blockedChannels = { nmes: [], urls: [], subs: [] } } = await extStorage.local.get("blockedChannels");
+  if (_type === "nmes") {
+    blockedChannels.nmes = blockedChannels.nmes.filter((item) => item !== REMOVE_TIT);
+  } else if (_type === "urls") {
+    blockedChannels.urls = blockedChannels.urls.filter((item) => item !== REMOVE_TIT);
+  }
+  await extStorage.local.set({ blockedChannels });
+
+  REMOVE_ELEM.remove();
+};
+
+/**
+ * 추천 방지 리스트
+ */
+async function initList() {
+  const LIST_WORD = document.querySelector(".list.list-word");
+  if (!LIST_WORD) throw new Error("init word list element failed.");
+
+  const LIST_URL = document.querySelector(".list.list-url");
+  if (!LIST_URL) throw new Error("init url list element failed.");
+
+  const extStorage =
+    typeof browser !== "undefined" && browser?.storage
+      ? browser.storage
+      : typeof chrome !== "undefined" && chrome?.storage
+        ? chrome.storage
+        : null;
+
+  if (!extStorage) {
+    throw new Error("initList: Extension storage API is not available.");
+  }
+
+  const { blockedChannels = { nmes: [], urls: [], subs: [] } } = await extStorage.local.get("blockedChannels");
+
+  const renderList = (listEl, items, key) => {
+    if (!Array.isArray(items) || items.length === 0) return;
+
+    const fragment = document.createDocumentFragment();
+
+    items.forEach((value) => {
+      const dlEl = document.createElement("dl");
+      const dtEl = document.createElement("dt");
+      const ddEl = document.createElement("dd");
+      const btnDel = document.createElement("button");
+
+      dtEl.textContent = value;
+      btnDel.setAttribute("aria-label", `클릭 시 ${value} 채널 삭제됨`);
+
+      btnDel.addEventListener("click", async (event) => {
+        await removeChannel(event, key);
+      });
+
+      ddEl.appendChild(btnDel);
+      dlEl.appendChild(dtEl);
+      dlEl.appendChild(ddEl);
+      fragment.appendChild(dlEl);
+    });
+
+    listEl.appendChild(fragment);
+  };
+
+  renderList(LIST_WORD, blockedChannels.nmes, "nmes");
+  renderList(LIST_URL, blockedChannels.urls, "urls");
+}
+
+/**
  * 채널명, 채널주소 입력 input 시 delete 버튼 이벤트
  */
 function iptDelBtnEvt() {
@@ -45,63 +134,90 @@ function iptDelBtnEvt() {
  */
 function addBtnEvt() {
   const BTN_ADD_NME = document.querySelector(".btn-word-add");
-  if (!BTN_ADD_NME) throw "input fobidden word add button element failed.";
+  if (!BTN_ADD_NME) throw new Error("input forbidden word add button element failed.");
+
   const LIST_WORD = document.querySelector(".list.list-word");
-  if (!LIST_WORD) throw "word list element failed.";
+  if (!LIST_WORD) throw new Error("word list element failed.");
+
   const BTN_ADD_URL = document.querySelector(".btn-url-add");
-  if (!BTN_ADD_URL) throw "input fobidden url add button element failed.";
+  if (!BTN_ADD_URL) throw new Error("input forbidden url add button element failed.");
+
   const LIST_URL = document.querySelector(".list.list-url");
-  if (!LIST_URL) throw "url list element failed.";
+  if (!LIST_URL) throw new Error("url list element failed.");
 
-  BTN_ADD_NME.addEventListener("click", (event) => {
-    const TARGET = event.target;
-    const IPT = TARGET.closest(".ipt-block")?.querySelector("input[type='text']");
-    if (!IPT) throw "add fobidden input element failed.";
-    const VAL = IPT.value;
-    if (VAL.value === "") return;
-    const ITEM = LIST_WORD.querySelectorAll("dl");
-    const NMES = ITEM.length > 0 ? [...ITEM].map((dl) => dl.querySelector("dt")?.innerHTML) : [];
-    if (NMES.includes(VAL)) {
-      IPT.value = "";
-      IPT.focus();
-      const btnDel = TARGET.closest(".ipt-block")?.querySelector(".btn-word-del");
-      if (btnDel) btnDel.classList.add("hide");
-      return;
-    };
+  const extStorage =
+    typeof browser !== "undefined" && browser?.storage
+      ? browser.storage
+      : typeof chrome !== "undefined" && chrome?.storage
+        ? chrome.storage
+        : null;
 
-    const DL_EL = document.createElement("dl");
-    const DT_EL = document.createElement("dt");
-    const DD_EL = document.createElement("dd");
-    const BTN_DEL = document.createElement("button");
+  if (!extStorage) {
+    throw new Error("addBtnEvt: Extension storage API is not available.");
+  }
 
-    DT_EL.innerHTML = VAL;
+  const resetInput = (target, inputEl) => {
+    inputEl.value = "";
+    inputEl.focus();
 
-    BTN_DEL.setAttribute("aria-label", `클릭 시 ${VAL} 채널 삭제됨`)
-    DD_EL.appendChild(BTN_DEL);
-    DL_EL.appendChild(DT_EL);
-    DL_EL.appendChild(DD_EL);
-
-    LIST_WORD.appendChild(DL_EL);
-
-    IPT.value = "";
-    IPT.focus();
-    const btnDel = TARGET.closest(".ipt-block")?.querySelector(".btn-word-del");
+    const btnDel = target.closest(".ipt-block")?.querySelector(".btn-del");
     if (btnDel) btnDel.classList.add("hide");
+  };
 
-    // sessionStorage add
-    const params = { nmes: [], urls: [], subs: [] };
-    const NMES_OBJ = window.localStorage.getItem("blockingChannel");
-    const NMES_OBJ_PARSE = NMES_OBJ ? JSON.parse(NMES_OBJ) : params;
-    const NMES_OBJ_VALS = NMES_OBJ_PARSE.nmes;
-    if (!NMES_OBJ_VALS.includes(VAL)) {
-      NMES_OBJ_VALS.push(VAL);
-      window.localStorage.setItem("blockingChannel", JSON.stringify(NMES_OBJ_VALS));
-    }
-  })
-};
+  const getListValues = (listEl) => [...listEl.querySelectorAll("dl dt")].map((dt) => dt.textContent);
 
-function main() {
+  const createListItem = (value, key) => {
+    const dlEl = document.createElement("dl");
+    const dtEl = document.createElement("dt");
+    const ddEl = document.createElement("dd");
+    const btnDel = document.createElement("button");
+
+    dtEl.textContent = value;
+    btnDel.setAttribute("aria-label", `클릭 시 ${value} 채널 삭제됨`);
+    btnDel.addEventListener("click", async (event) => {
+      await removeChannel(event, key);
+    });
+
+    ddEl.appendChild(btnDel);
+    dlEl.append(dtEl, ddEl);
+
+    return dlEl;
+  };
+
+  const bindAddButton = (buttonEl, listEl, key) => {
+    buttonEl.addEventListener("click", async (event) => {
+      const target = event.target;
+      const inputEl = target.closest(".ipt-block")?.querySelector("input[type='text']");
+      if (!inputEl) throw new Error("add forbidden input element failed.");
+
+      const value = inputEl.value.trim();
+      if (value === "") return;
+
+      const listValues = getListValues(listEl);
+      if (listValues.includes(value)) {
+        resetInput(target, inputEl);
+        return;
+      }
+
+      listEl.appendChild(createListItem(value, key));
+      resetInput(target, inputEl);
+
+      const { blockedChannels = { nmes: [], urls: [], subs: [] } } = await extStorage.local.get("blockedChannels");
+
+      if (!blockedChannels[key].includes(value)) {
+        blockedChannels[key].push(value);
+        await extStorage.local.set({ blockedChannels });
+      }
+    });
+  };
+
+  bindAddButton(BTN_ADD_NME, LIST_WORD, "nmes");
+  bindAddButton(BTN_ADD_URL, LIST_URL, "urls");
+}
+
+async function main() {
   try {
+    await initList();
     iptDelBtnEvt();
     addBtnEvt();
   } catch (error) {

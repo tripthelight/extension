@@ -411,3 +411,26 @@ window.addEventListener('pageshow', () => {
   }, 100);
 });
 */
+
+
+
+window.addEventListener('pageshow', async () => {
+  // const { blockedChannels = [] } = await chrome.storage.local.get("blockedChannels");
+  // console.log("차단 목록:", blockedChannels);
+
+  // Firefox/Safari 계열 → browser.storage
+  // Brave/Chrome/Edge 같은 Chromium 계열 → chrome.storage
+  const extStorage =
+    typeof browser !== "undefined" && browser?.storage
+      ? browser.storage
+      : typeof chrome !== "undefined" && chrome?.storage
+        ? chrome.storage
+        : null;
+
+  if (!extStorage) {
+    throw new Error("Extension storage API is not available.");
+  }
+
+  const result = await extStorage.local.get("blockedChannels");
+  console.log("차단 목록 >>>>> ", result.blockedChannels);
+});
