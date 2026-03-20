@@ -481,17 +481,21 @@ async function removeBlockedVideos(extStorage) {
   if (result?.titElements && result.titElements.length > 0) {
     for (let i = 0; i < result.titElements.length; i++) {
       const el = result.titElements[i];
-      const removeElement1 = el?.closest("ytd-video-renderer");
-      if (removeElement1) removeElement1.remove(); // 초기 or 검색 후 long form
-      const removeElement2 = el?.closest("yt-lockup-view-model");
-      if (removeElement2) removeElement2.remove(); // 영상 상세 추천영상
+      const removeElement1 = el?.closest("ytd-rich-item-renderer");
+      if (removeElement1) removeElement1.remove(); // 초기 long form
+      const removeElement2 = el?.closest("ytd-video-renderer");
+      if (removeElement2) removeElement2.remove(); // 검색 후 long form
+      const removeElement3 = el?.closest("yt-lockup-view-model");
+      if (removeElement3) removeElement3.classList.add("blocking-recomn"); // 영상 상세 추천영상
     }
   };
   if (result?.hrefElements && result.hrefElements.length > 0) {
     for (let i = 0; i < result.hrefElements.length; i++) {
       const el = result.hrefElements[i];
-      const removeElement = el?.closest("ytd-video-renderer");
-      if (removeElement) removeElement.remove(); // 초기 or 검색 후 long form
+      const removeElement1 = el?.closest("ytd-rich-item-renderer");
+      if (removeElement1) removeElement1.remove(); // 초기 long form
+      const removeElement2 = el?.closest("ytd-video-renderer");
+      if (removeElement2) removeElement2.remove(); // 검색 후 long form
     }
   };
 }
@@ -506,28 +510,15 @@ window.addEventListener('pageshow', () => {
         : typeof chrome !== "undefined" && chrome?.storage
           ? chrome.storage
           : null;
-  
-    const extStorageO = null;
+
     if (!extStorage) {
       throw new Error("Extension storage API is not available.");
     }
-  
-    let timer = null;
-    let prevLoadingExists = false;
-    const detailTarget = document.querySelector("#secondary");
 
     // MutationObserver
     // DOM 변경 감지
     // 차단 채널을 삭제하는 건 setInterval 이 아닌 observer에서 실행 
     const observer = new MutationObserver(async (mutations) => {
-      // clearTimeout(timer);
-      // timer = setTimeout(async () => {
-      //   const loadingEl = document.querySelector("#secondary #secondary-inner #related ytd-watch-next-secondary-results-renderer ytd-continuation-item-renderer");
-      //   const isLoading = !!loadingEl && loadingEl.hasAttribute("active");
-      //   if (!isLoading) {
-      //     await removeBlockedVideos(extStorage);
-      //   }
-      // }, 200);
       await removeBlockedVideos(extStorage);
     });
   
@@ -535,8 +526,6 @@ window.addEventListener('pageshow', () => {
       childList: true,
       subtree: true
     });
-
-    // await removeBlockedVideos(extStorage);
   } catch (error) {
     console.warn(error?.message ?? "blocking channel extension error.");
   }

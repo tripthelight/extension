@@ -1,4 +1,5 @@
-button.btn-blocking {
+button.btn-blocking,
+button.btn-interest {
   color: var(--yt-spec-text-primary);
   white-space: nowrap;
   display: flex;
