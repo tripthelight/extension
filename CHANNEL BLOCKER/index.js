@@ -113,6 +113,15 @@ function findListWrap(el) {
   return null;
 }
 
+function btnBlockerEvent(event) {
+  // 채널 추천 안함 click event
+  console.log("채널 추천 안함 click >>>>>>>>>> ");
+};
+function btnInterest(event) {
+  // 관심 없음 click event
+  console.log("관심 없음 click >>>>>>>>>> ");
+};
+
 function makeBtn(el, _form) {
   if (_form === "") return; // "long" || "short" || "recomn" || "detail" || ""
   const LIST_WRAP = findListWrap(el);
@@ -120,29 +129,36 @@ function makeBtn(el, _form) {
   const BTN_INTEREST = LIST_WRAP.querySelector("button.btn-interest");
   const BTN_BLOCKER = LIST_WRAP.querySelector("button.btn-blocking");
 
+  const BTNS = {
+    btnBlocker: null, // 채널 추천 안함
+    btnInterest: null, // 관심 없음
+  }
+
   if (_form !== "short") {
     // 채널 추천 안함 - 해당 채널 영상 전체 차단됨
-    if (BTN_BLOCKER) return;
-    const btnBlocker = document.createElement("button");
-    btnBlocker.textContent = "채널 추천 안함";
-    btnBlocker.classList.add("btn-blocking");
+    if (BTN_BLOCKER) BTN_BLOCKER.remove();
+    BTNS.btnBlocker = document.createElement("button");
+    BTNS.btnBlocker.textContent = "채널 추천 안함";
+    BTNS.btnBlocker.classList.add("btn-blocking");
 
     if (BTN_INTEREST) {
-      BTN_INTEREST.before(btnBlocker)
+      BTN_INTEREST.before(BTNS.btnBlocker)
     } else {
-      LIST_WRAP.appendChild(btnBlocker);
+      LIST_WRAP.appendChild(BTNS.btnBlocker);
     }
   }
   if (_form === "short") {
-    const BTN_BLOCKER = LIST_WRAP.querySelector("button.btn-blocking");
     if (BTN_BLOCKER) BTN_BLOCKER.remove();
   }
   // 관심없음 - 해당 영상만 차단됨
-  if (BTN_INTEREST) return;
-  const btnInterest = document.createElement("button");
-  btnInterest.textContent = "관심 없음";
-  btnInterest.classList.add("btn-interest");
-  LIST_WRAP.appendChild(btnInterest);
+  if (BTN_INTEREST) BTN_INTEREST.remove();
+  BTNS.btnInterest = document.createElement("button");
+  BTNS.btnInterest.textContent = "관심 없음";
+  BTNS.btnInterest.classList.add("btn-interest");
+  LIST_WRAP.appendChild(BTNS.btnInterest);
+
+  if (BTNS.btnBlocker) BTNS.btnBlocker.addEventListener("click", btnBlockerEvent);
+  if (BTNS.btnInterest) BTNS.btnInterest.addEventListener("click", btnInterest);
 }
 
 function findVodForm(target) {
@@ -202,11 +218,6 @@ window.addEventListener('pageshow', () => {
       const targetShortMain = event.target?.closest("ytd-rich-item-renderer");
       const targetShortSearch = event.target?.closest("div.ytGridShelfViewModelGridShelfItem");
 
-      // const vodForm = 
-      //   event.target?.closest("ytd-rich-section-renderer") ||
-      //   event.target?.closest("grid-shelf-view-model") ? "short" : 
-      //   targetLongMain || targetLongSearch ? "long" : "";
-
       const vodForm = findVodForm(event.target);
 
       waitElement('ytd-popup-container', (el) => {
@@ -249,8 +260,6 @@ window.addEventListener('pageshow', () => {
         checkDropdown();
       });
     }, true);
-
-
   } catch (error) {
     console.warn(error?.message ?? "blocking channel extension error.");
   }
