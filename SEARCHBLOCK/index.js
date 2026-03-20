@@ -413,7 +413,7 @@ window.addEventListener('pageshow', () => {
 */
 
 
-
+/*
 window.addEventListener('pageshow', async () => {
   // const { blockedChannels = [] } = await chrome.storage.local.get("blockedChannels");
   // console.log("차단 목록:", blockedChannels);
@@ -431,6 +431,140 @@ window.addEventListener('pageshow', async () => {
     throw new Error("Extension storage API is not available.");
   }
 
-  const result = await extStorage.local.get("blockedChannels");
-  console.log("차단 목록 >>>>> ", result.blockedChannels);
+  const { blockedChannels = { nmes: [], urls: [], subs: [] } } = await extStorage.local.get("blockedChannels");
+  console.log("차단 목록 >>>>> ", blockedChannels);
 });
+*/
+
+async function removeBlockedVideos(extStorage) {
+  const { blockedChannels = { nmes: [], urls: [], subs: [] } } = await extStorage.local.get("blockedChannels");
+
+  function findMatchedElements() {
+    const titSet = new Set(blockedChannels.nmes);
+    const hrefSet = new Set(blockedChannels.urls);
+
+    const matchedTitElements = [];
+    const matchedHrefElements = [];
+
+    const walker = document.createTreeWalker(
+      document.body,
+      NodeFilter.SHOW_ELEMENT
+    );
+
+    let node = walker.currentNode;
+
+    while (node) {
+      const text = node.textContent?.trim();
+      if (text && titSet.has(text)) {
+        matchedTitElements.push(node);
+      }
+
+      if (node.tagName === "A") {
+        const href = node.getAttribute("href") || "";
+        const normalizedHref = href.replace(/^\/@/, "");
+        if (hrefSet.has(normalizedHref)) {
+          matchedHrefElements.push(node);
+        }
+      }
+
+      node = walker.nextNode();
+    }
+
+    return {
+      titElements: matchedTitElements,
+      hrefElements: matchedHrefElements
+    };
+  }
+
+  const result = findMatchedElements();
+
+  if (result?.titElements && result.titElements.length > 0) {
+    for (let i = 0; i < result.titElements.length; i++) {
+      const el = result.titElements[i];
+      const removeElement1 = el?.closest("ytd-video-renderer");
+      if (removeElement1) removeElement1.remove(); // 초기 or 검색 후 long form
+      const removeElement2 = el?.closest("yt-lockup-view-model");
+      if (removeElement2) removeElement2.remove(); // 영상 상세 추천영상
+    }
+  };
+  if (result?.hrefElements && result.hrefElements.length > 0) {
+    for (let i = 0; i < result.hrefElements.length; i++) {
+      const el = result.hrefElements[i];
+      const removeElement = el?.closest("ytd-video-renderer");
+      if (removeElement) removeElement.remove(); // 초기 or 검색 후 long form
+    }
+  };
+}
+
+window.addEventListener('pageshow', () => {
+  try {
+    // Firefox/Safari 계열 → browser.storage
+    // Brave/Chrome/Edge 같은 Chromium 계열 → chrome.storage
+    const extStorage =
+      typeof browser !== "undefined" && browser?.storage
+        ? browser.storage
+        : typeof chrome !== "undefined" && chrome?.storage
+          ? chrome.storage
+          : null;
+  
+    const extStorageO = null;
+    if (!extStorage) {
+      throw new Error("Extension storage API is not available.");
+    }
+  
+    let timer = null;
+    let prevLoadingExists = false;
+    const detailTarget = document.querySelector("#secondary");
+
+    // MutationObserver
+    // DOM 변경 감지
+    // 차단 채널을 삭제하는 건 setInterval 이 아닌 observer에서 실행 
+    const observer = new MutationObserver(async (mutations) => {
+      // clearTimeout(timer);
+      // timer = setTimeout(async () => {
+      //   const loadingEl = document.querySelector("#secondary #secondary-inner #related ytd-watch-next-secondary-results-renderer ytd-continuation-item-renderer");
+      //   const isLoading = !!loadingEl && loadingEl.hasAttribute("active");
+      //   if (!isLoading) {
+      //     await removeBlockedVideos(extStorage);
+      //   }
+      // }, 200);
+      await removeBlockedVideos(extStorage);
+    });
+  
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    // await removeBlockedVideos(extStorage);
+  } catch (error) {
+    console.warn(error?.message ?? "blocking channel extension error.");
+  }
+});
+
+// STEP 1 -
+// 초기 or 검색 후 화면일 경우
+// long form : 
+// blockedChannels.urls 차단
+// blockedChannels.nmes 차단
+// short form :
+// short form은 "채널 추천 안함" 이 아니고, "관심없음" 임
+// 그래서 영상 클릭 시 이동하는 주소를 저장해뒀다가 안보이게 함
+// blockedChannels.subs 차단
+
+// 영상 상세 화면일 경우
+// 추천영상에는 채널명이 들어감
+// blockedChannels.nmes 차단
+
+// STEP 2 -
+// 초기 or 검색 후 화면일 경우
+// long form 의 "채널 추천 안함" 클릭 시
+// 해당 영상의 채널주소, 채널명을 urls와 nmes에 저장
+// short form 의 "관심없음" 클릭 시
+// 영상 클릭 시 이동하는 주소를 subs에 저장
+
+// 영상 상세 화면일 경우
+// 해당 영상의 "채널 추천 안함" 클릭 시
+// 해당 영상의 채널주소, 채널명을 urls와 nmes에 저장
+// 추천 영상의 "채널 추천 안함" 클릭 시
+// 해당 영상의 채널명을 nmes에 저장
