@@ -22,7 +22,7 @@ async function removeChannel(event, _type) {
     throw "removeChannel : Extension storage API is not available.";
   }
 
-  const { blockedChannels = { nmes: [], urls: [], subs: [] } } = await extStorage.local.get("blockedChannels");
+  const { blockedChannels = { nmes: [], urls: [], links: [] } } = await extStorage.local.get("blockedChannels");
   if (_type === "nmes") {
     blockedChannels.nmes = blockedChannels.nmes.filter((item) => item !== REMOVE_TIT);
   } else if (_type === "urls") {
@@ -54,7 +54,7 @@ async function initList() {
     throw new Error("initList: Extension storage API is not available.");
   }
 
-  const { blockedChannels = { nmes: [], urls: [], subs: [] } } = await extStorage.local.get("blockedChannels");
+  const { blockedChannels = { nmes: [], urls: [], links: [] } } = await extStorage.local.get("blockedChannels");
 
   const renderList = (listEl, items, key) => {
     if (!Array.isArray(items) || items.length === 0) return;
@@ -202,7 +202,7 @@ function addBtnEvt() {
       listEl.appendChild(createListItem(value, key));
       resetInput(target, inputEl);
 
-      const { blockedChannels = { nmes: [], urls: [], subs: [] } } = await extStorage.local.get("blockedChannels");
+      const { blockedChannels = { nmes: [], urls: [], links: [] } } = await extStorage.local.get("blockedChannels");
 
       if (!blockedChannels[key].includes(value)) {
         blockedChannels[key].push(value);
