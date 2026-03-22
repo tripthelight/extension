@@ -302,7 +302,27 @@ function addBtnEvt() {
         return;
       }
 
-      listEl.appendChild(createListItem(value, key));
+      const ITEM = createListItem(value, key);
+      const LIST_WRAP = listEl.querySelector("ul.inner");
+      if (LIST_WRAP) {
+        const LISTS = LIST_WRAP.querySelectorAll("li");
+        if (LISTS && LISTS.length > 0) {
+          LISTS[0].prepend(ITEM);
+        } else {
+          const liEl = document.createElement("li");
+          liEl.appendChild(ITEM);
+          LIST_WRAP.appendChild(liEl);
+          listEl.appendChild(LIST_WRAP);
+        }
+      } else {
+        const listWrap = document.createElement("ul");
+        listWrap.classList.add("inner");
+        const liEl = document.createElement("li");
+        liEl.appendChild(ITEM);
+        listWrap.appendChild(liEl);
+        listEl.appendChild(listWrap);
+      }
+
       resetInput(target, inputEl);
 
       const { blockedChannels = { nmes: [], urls: [], links: [] } } = await extStorage.local.get("blockedChannels");
@@ -311,6 +331,16 @@ function addBtnEvt() {
         blockedChannels[key].push(value);
         await extStorage.local.set({ blockedChannels });
       }
+
+      // 유튜브 브라우저에 메시지 전달
+      const [tab] = await chrome.tabs.query({
+        active: true,
+        currentWindow: true
+      });
+      if (!tab?.id) return;
+      await chrome.tabs.sendMessage(tab.id, {
+        type: 'RUN_BLOCK'
+      });
     });
   };
 

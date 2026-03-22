@@ -3,7 +3,7 @@
   "name": "Channel Blocker",
   "version": "1.0.0",
   "description": "You can block channels even when logged out of YouTube.",
-  "permissions": ["storage"],
+  "permissions": ["tabs", "storage"],
   "host_permissions": ["https://www.youtube.com/*"],
   "action": {
     "default_popup": "index.html"

@@ -508,3 +508,14 @@ window.addEventListener('pageshow', () => {
     console.warn(error?.message ?? "blocking channel extension error.");
   }
 });
+
+function runBlockChannels() {
+  console.log('유튜브 페이지에서 차단 로직 실행');
+  // 여기서 원하는 DOM 탐색 / 숨김 처리
+};
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message?.type === 'RUN_BLOCK') {
+    runBlockChannels();
+    sendResponse({ ok: true });
+  }
+});
