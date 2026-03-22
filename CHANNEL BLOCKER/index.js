@@ -27,9 +27,11 @@ async function removeBlockedVideos(extStorage) {
   function findMatchedElements() {
     const titSet = new Set(blockedChannels.nmes);
     const hrefSet = new Set(blockedChannels.urls);
+    const linkSet = new Set(blockedChannels.links);
 
     const matchedTitElements = [];
     const matchedHrefElements = [];
+    const matchedLinkElements = [];
 
     const walker = document.createTreeWalker(
       document.body,
@@ -50,14 +52,24 @@ async function removeBlockedVideos(extStorage) {
         if (hrefSet.has(normalizedHref)) {
           matchedHrefElements.push(node);
         }
-      }
 
+        const normalizedLink = href.includes("/shorts/") ? href.replace("/shorts/", "") : href;
+        if (linkSet.has(normalizedLink)) {
+          // 쇼츠 관심없음
+          matchedLinkElements.push(node);
+        } else if ([...linkSet].some((link) => href.includes(link))) {
+          // 롱폼 관심없음
+          matchedLinkElements.push(node);
+        }
+      }
+      
       node = walker.nextNode();
     }
 
     return {
       titElements: matchedTitElements,
-      hrefElements: matchedHrefElements
+      hrefElements: matchedHrefElements,
+      linkElements: matchedLinkElements,
     };
   }
 
@@ -83,6 +95,19 @@ async function removeBlockedVideos(extStorage) {
       if (removeElement2) removeElement2.remove(); // 검색 후 long form
     }
   };
+  if (result?.linkElements && result.linkElements.length > 0) {
+    for (let i = 0; i < result.linkElements.length; i++) {
+      const el = result.linkElements[i];
+      const removeElement1 = el?.closest("ytd-rich-item-renderer");
+      if (removeElement1) removeElement1.remove(); // 초기 short form
+      const removeElement2 = el?.closest(".ytGridShelfViewModelGridShelfItem");
+      if (removeElement2) removeElement2.remove(); // 검색 후 short form
+      const removeElement3 = el?.closest("ytd-video-renderer");
+      if (removeElement3) removeElement3.remove(); // 검색 후 long form
+      const removeElement4 = el?.closest("yt-lockup-view-model");
+      if (removeElement4) removeElement4.classList.add("blocking-recomn"); // 영상 상세 추천영상
+    }
+  }
 };
 
 function waitElement(selector, callback) {
@@ -129,25 +154,7 @@ function findListWrap(el) {
   return null;
 };
 
-async function btnBlockerEvent(event, _data) {
-  // 채널 추천 안함 click event
-  const { link, url, nme } = _data;
-
-  // console.log("link :::: ", link);
-  // console.log("url ::::: ", url);
-  // console.log("nme ::::: ", nme);
-
-  const extStorage = findExtStorage();
-  if (!extStorage) return;
-  const { blockedChannels = { nmes: [], urls: [], links: [] } } = await extStorage.local.get("blockedChannels");
-
-  if (link !== "") blockedChannels.links.push(link);
-  if (url !== "") blockedChannels.urls.push(url);
-  if (nme !== "") blockedChannels.nmes.push(nme);
-
-  await extStorage.local.set({ blockedChannels });
-  await removeBlockedVideos(extStorage);
-
+function dummyElementClick() {
   // 검색 후 화면에서 "채널추천안함" 누르면 팝업이 안사라짐
   // 그래서 dummy element click 시킴
   const DUMMY = { dummyElem: null };
@@ -159,10 +166,43 @@ async function btnBlockerEvent(event, _data) {
   }
   DUMMY.dummyElem.click();
   DUMMY.dummyElem.remove();
+}
+
+async function btnBlockerEvent(_data) {
+  // 채널 추천 안함 click event
+  const { link, url, nme } = _data;
+
+  // console.log("link :::: ", link);
+  // console.log("url ::::: ", url);
+  // console.log("nme ::::: ", nme);
+
+  const extStorage = findExtStorage();
+  if (!extStorage) return;
+  const { blockedChannels = { nmes: [], urls: [], links: [] } } = await extStorage.local.get("blockedChannels");
+
+  if (url !== "") blockedChannels.urls.push(url);
+  if (nme !== "") blockedChannels.nmes.push(nme);
+
+  await extStorage.local.set({ blockedChannels });
+  await removeBlockedVideos(extStorage);
+
+  dummyElementClick();
 };
-function btnInterest(event) {
+async function btnInterestEvent(link) {
   // 관심 없음 click event
-  console.log("관심 없음 click >>>>>>>>>> ");
+  
+  // console.log("link :::: ", link);
+
+  const extStorage = findExtStorage();
+  if (!extStorage) return;
+  const { blockedChannels = { nmes: [], urls: [], links: [] } } = await extStorage.local.get("blockedChannels");
+
+  if (link !== "") blockedChannels.links.push(link);
+
+  await extStorage.local.set({ blockedChannels });
+  await removeBlockedVideos(extStorage);
+
+  dummyElementClick();
 };
 
 function makeBtn(el, _data) {
@@ -208,9 +248,8 @@ function makeBtn(el, _data) {
   BTNS.btnInterest.classList.add("btn-interest");
   LIST_WRAP.appendChild(BTNS.btnInterest);
 
-  const params = { link, url, nme };
-  if (BTNS.btnBlocker) BTNS.btnBlocker.addEventListener("click", (event) => btnBlockerEvent(event, params));
-  if (BTNS.btnInterest) BTNS.btnInterest.addEventListener("click", (event) => btnInterest(event, params));
+  if (BTNS.btnBlocker) BTNS.btnBlocker.addEventListener("click", () => btnBlockerEvent({ link, url, nme }));
+  if (BTNS.btnInterest) BTNS.btnInterest.addEventListener("click", () => btnInterestEvent(link));
 };
 
 function getVideoId(url) {
@@ -218,6 +257,21 @@ function getVideoId(url) {
   const match = url.match(/[?&]v=([^&]+)/);
   return match ? match[1] : "";
 };
+function getVideoId(str) {
+  // url 문자에서 "v=" 쿼리의 값을 리턴
+  if (str.includes("v=")) {
+    const match = str.match(/[?&]v=([^&]+)/);
+    return match ? match[1] : "";
+  }
+
+  // url 문자에서 "/shorts/" 문자를 제외한 값을 리턴
+  if (str.includes("/shorts/")) {
+    const match = str.match(/\/shorts\/([^?&/]+)/);
+    return match ? match[1] : "";
+  }
+
+  return str;
+}
 function getChannelId(str) {
   // str 문자에서 "/@" 다음 문자를 리턴
   return str.startsWith("/@") ? str.slice(2) : "";
@@ -251,6 +305,9 @@ function findVodData(target) {
         
         // 해당영상링크(video-id)
         const aEl = wrapEl?.querySelector("a");
+        console.log("쇼츠에 a 있냐 ????????? ", aEl);
+        console.log("쇼츠에 a href 있냐 ???? ", aEl ? aEl?.getAttribute("href") ?? "" : "");
+
         PARAMS.link = aEl ? aEl?.getAttribute("href") ?? "" : "";
       }
     }
