@@ -27,6 +27,9 @@
 
   --color-bg-del: #9ca3af;        /* input delete btn bg */
   --color-bg-del-line: #6b7280;   /* input delete btn line */
+
+  --list-t-width: 0;
+  --list-b-width: 0;
 }
 
 @media (prefers-color-scheme: dark) {

@@ -129,6 +129,9 @@ body {
   line-height: 1.5;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  -webkit-user-select: none; /* Safari */
+  -ms-user-select: none;     /* IE 10+ and Edge */
+  user-select: none;         /* Standard syntax */
 }
 
 /* 리스트 스타일 제거 */

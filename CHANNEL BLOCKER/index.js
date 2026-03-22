@@ -79,9 +79,9 @@ async function removeBlockedVideos(extStorage) {
     for (let i = 0; i < result.titElements.length; i++) {
       const el = result.titElements[i];
       const removeElement1 = el?.closest("ytd-rich-item-renderer");
-      if (removeElement1) removeElement1.remove(); // 초기 long form
+      if (removeElement1) removeElement1.classList.add("blocking-recomn"); // 초기 long form
       const removeElement2 = el?.closest("ytd-video-renderer");
-      if (removeElement2) removeElement2.remove(); // 검색 후 long form
+      if (removeElement2) removeElement2.classList.add("blocking-recomn"); // 검색 후 long form
       const removeElement3 = el?.closest("yt-lockup-view-model");
       if (removeElement3) removeElement3.classList.add("blocking-recomn"); // 영상 상세 추천영상
     }
@@ -90,20 +90,20 @@ async function removeBlockedVideos(extStorage) {
     for (let i = 0; i < result.hrefElements.length; i++) {
       const el = result.hrefElements[i];
       const removeElement1 = el?.closest("ytd-rich-item-renderer");
-      if (removeElement1) removeElement1.remove(); // 초기 long form
+      if (removeElement1) removeElement1.classList.add("blocking-recomn"); // 초기 long form
       const removeElement2 = el?.closest("ytd-video-renderer");
-      if (removeElement2) removeElement2.remove(); // 검색 후 long form
+      if (removeElement2) removeElement2.classList.add("blocking-recomn"); // 검색 후 long form
     }
   };
   if (result?.linkElements && result.linkElements.length > 0) {
     for (let i = 0; i < result.linkElements.length; i++) {
       const el = result.linkElements[i];
       const removeElement1 = el?.closest("ytd-rich-item-renderer");
-      if (removeElement1) removeElement1.remove(); // 초기 short form
+      if (removeElement1) removeElement1.classList.add("blocking-recomn"); // 초기 short form
       const removeElement2 = el?.closest(".ytGridShelfViewModelGridShelfItem");
-      if (removeElement2) removeElement2.remove(); // 검색 후 short form
+      if (removeElement2) removeElement2.classList.add("blocking-recomn"); // 검색 후 short form
       const removeElement3 = el?.closest("ytd-video-renderer");
-      if (removeElement3) removeElement3.remove(); // 검색 후 long form
+      if (removeElement3) removeElement3.classList.add("blocking-recomn"); // 검색 후 long form
       const removeElement4 = el?.closest("yt-lockup-view-model");
       if (removeElement4) removeElement4.classList.add("blocking-recomn"); // 영상 상세 추천영상
     }

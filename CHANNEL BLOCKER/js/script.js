@@ -1,3 +1,19 @@
+function findExtStorage() {
+  // Firefox/Safari 계열 → browser.storage
+  // Brave/Chrome/Edge 같은 Chromium 계열 → chrome.storage
+  const extStorage =
+    typeof browser !== "undefined" && browser?.storage
+      ? browser.storage
+      : typeof chrome !== "undefined" && chrome?.storage
+        ? chrome.storage
+        : null;
+
+  return extStorage;
+};
+
+const round2 = (num) => Math.round(num * 100) / 100;
+const getWidth = (el) => round2(el.getBoundingClientRect().width);
+
 /**
  * 채널명, 채널주소 삭제 event
  */
@@ -10,13 +26,13 @@ async function removeChannel(event, _type) {
   if (!REMOVE_DT) return;
   const REMOVE_TIT = REMOVE_DT.innerHTML;
   if (!REMOVE_TIT) return;
+  
+  const LIST_INNER = TARGET?.closest("ul.inner");
+  if (!LIST_INNER) return;
+  // const LIST_FLAG = TARGET?.closest("li");
+  // if (!LIST_FLAG) return;
 
-  const extStorage =
-    typeof browser !== "undefined" && browser?.storage
-      ? browser.storage
-      : typeof chrome !== "undefined" && chrome?.storage
-        ? chrome.storage
-        : null;
+  const extStorage = findExtStorage();
 
   if (!extStorage) {
     throw "removeChannel : Extension storage API is not available.";
@@ -33,6 +49,96 @@ async function removeChannel(event, _type) {
   REMOVE_ELEM.remove();
 };
 
+const SCROLL_DATA = {
+  activeTarget: null,
+  isDown: false,
+  startX: 0,
+  startScrollLeft: 0,
+};
+
+function bindDragScroll(target) {
+  if (!target) return;
+
+  target.addEventListener("mousedown", (e) => {
+    SCROLL_DATA.activeTarget = target;
+    SCROLL_DATA.isDown = true;
+    SCROLL_DATA.startX = e.clientX;
+    SCROLL_DATA.startScrollLeft = target.scrollLeft;
+
+    target.classList.add("dragging");
+  });
+
+  target.addEventListener(
+    "wheel",
+    (e) => {
+      e.preventDefault();
+      target.scrollLeft += e.deltaY * 0.8;
+    },
+    { passive: false }
+  );
+}
+document.addEventListener("mousemove", (e) => {
+  if (!SCROLL_DATA.isDown || !SCROLL_DATA.activeTarget) return;
+  const dx = e.clientX - SCROLL_DATA.startX;
+  SCROLL_DATA.activeTarget.scrollLeft = SCROLL_DATA.startScrollLeft - dx;
+});
+document.addEventListener("mouseup", () => {
+  if (SCROLL_DATA.activeTarget) {
+    SCROLL_DATA.activeTarget.classList.remove("dragging");
+  }
+  SCROLL_DATA.isDown = false;
+  SCROLL_DATA.activeTarget = null;
+});
+
+const renderSplitList = (fragment, key) => {
+  const dlList = [...fragment.querySelectorAll("dl")];
+  if (dlList.length === 0) return;
+
+  const listTypeClass = key === "nmes" ? ".list-word" : ".list-url";
+  const listWrap = document.querySelector(
+    `#container.blocking-channel ${listTypeClass} .inner`
+  );
+
+  if (!listWrap) return;
+
+  const listTop = document.createElement("li");
+  const listBottom = document.createElement("li");
+
+  const items = dlList.map((dlEl) => ({
+    el: dlEl,
+    width: getWidth(dlEl),
+  }));
+
+  const totalWidth = round2(
+    items.reduce((sum, item) => sum + item.width, 0)
+  );
+  const halfWidth = round2(Math.ceil(totalWidth / 2 * 100) / 100);
+
+  const data = items.reduce(
+    (acc, item) => {
+      const nextTopWidth = round2(acc.t + item.width);
+
+      if (nextTopWidth < halfWidth) {
+        acc.t = nextTopWidth;
+        listTop.appendChild(item.el);
+      } else {
+        acc.b = round2(acc.b + item.width);
+        listBottom.appendChild(item.el);
+      }
+
+      return acc;
+    },
+    { w: totalWidth, t: 0, b: 0 }
+  );
+
+  listWrap.appendChild(listTop);
+  listWrap.appendChild(listBottom);
+
+  // const rootStyle = document.documentElement.style;
+  // rootStyle.setProperty("--list-t-width", `${data.t}px`);
+  // rootStyle.setProperty("--list-b-width", `${data.b}px`);
+};
+
 /**
  * 추천 방지 리스트
  */
@@ -43,12 +149,7 @@ async function initList() {
   const LIST_URL = document.querySelector(".list.list-url");
   if (!LIST_URL) throw new Error("init url list element failed.");
 
-  const extStorage =
-    typeof browser !== "undefined" && browser?.storage
-      ? browser.storage
-      : typeof chrome !== "undefined" && chrome?.storage
-        ? chrome.storage
-        : null;
+  const extStorage = findExtStorage();
 
   if (!extStorage) {
     throw new Error("initList: Extension storage API is not available.");
@@ -59,7 +160,8 @@ async function initList() {
   const renderList = (listEl, items, key) => {
     if (!Array.isArray(items) || items.length === 0) return;
 
-    const fragment = document.createDocumentFragment();
+    // const fragment = document.createDocumentFragment();
+    const fragment = document.createElement("ul");
 
     items.forEach((value) => {
       const dlEl = document.createElement("dl");
@@ -80,11 +182,17 @@ async function initList() {
       fragment.appendChild(dlEl);
     });
 
+    fragment.classList.add("inner");
     listEl.appendChild(fragment);
+
+    renderSplitList(listEl, key);
   };
 
   renderList(LIST_WORD, blockedChannels.nmes, "nmes");
   renderList(LIST_URL, blockedChannels.urls, "urls");
+
+  bindDragScroll(LIST_WORD, "nmes");
+  bindDragScroll(LIST_URL, "urls");
 }
 
 /**
@@ -145,12 +253,7 @@ function addBtnEvt() {
   const LIST_URL = document.querySelector(".list.list-url");
   if (!LIST_URL) throw new Error("url list element failed.");
 
-  const extStorage =
-    typeof browser !== "undefined" && browser?.storage
-      ? browser.storage
-      : typeof chrome !== "undefined" && chrome?.storage
-        ? chrome.storage
-        : null;
+  const extStorage = findExtStorage();
 
   if (!extStorage) {
     throw new Error("addBtnEvt: Extension storage API is not available.");
