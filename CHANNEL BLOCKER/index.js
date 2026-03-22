@@ -283,6 +283,13 @@ function getChannelId(str) {
   // str 문자에서 "/@" 다음 문자를 리턴
   return str.startsWith("/@") ? str.slice(2) : "";
 };
+function safeDecodeURIComponent(str) {
+  try {
+    return decodeURIComponent(str);
+  } catch {
+    return str;
+  }
+};
 
 function findVodData(target) {
   const PARAMS = {
@@ -386,16 +393,16 @@ function findVodData(target) {
     PARAMS.nme = aEl ? aEl?.innerText ?? "" : "";
     
     // 채널 주소
-    PARAMS.nme = aEl ? aEl?.getAttribute("href") ?? "" : "";
+    PARAMS.url = aEl ? aEl?.getAttribute("href") ?? "" : "";
   
     PARAMS.type = "detail";
   }
 
   return {
     type: PARAMS.type,
-    link: getVideoId(PARAMS.link),
-    url: getChannelId(PARAMS.url),
-    nme: PARAMS.nme
+    link: getVideoId(safeDecodeURIComponent(PARAMS.link)),
+    url: getChannelId(safeDecodeURIComponent(PARAMS.url)),
+    nme: safeDecodeURIComponent(PARAMS.nme)
   };
 };
 
