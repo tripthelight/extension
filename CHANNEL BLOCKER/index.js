@@ -67,9 +67,9 @@ async function removeBlockedVideos(extStorage) {
     }
 
     return {
-      titElements: matchedTitElements,
-      hrefElements: matchedHrefElements,
-      linkElements: matchedLinkElements,
+      titElements: [...new Set(matchedTitElements)],
+      hrefElements: [...new Set(matchedHrefElements)],
+      linkElements: [...new Set(matchedLinkElements)],
     };
   }
 
@@ -170,7 +170,7 @@ function dummyElementClick() {
 
 async function btnBlockerEvent(_data) {
   // 채널 추천 안함 click event
-  const { link, url, nme } = _data;
+  const { url, nme } = _data;
 
   // console.log("link :::: ", link);
   // console.log("url ::::: ", url);
@@ -180,13 +180,18 @@ async function btnBlockerEvent(_data) {
   if (!extStorage) return;
   const { blockedChannels = { nmes: [], urls: [], links: [] } } = await extStorage.local.get("blockedChannels");
 
-  if (url !== "") blockedChannels.urls.push(url);
-  if (nme !== "") blockedChannels.nmes.push(nme);
-
-  await extStorage.local.set({ blockedChannels });
-  await removeBlockedVideos(extStorage);
-
-  dummyElementClick();
+  if (
+    (url !== "" && !blockedChannels.urls.includes(url)) ||
+    (nme !== "" && !blockedChannels.nmes.includes(nme))
+  ) {
+    if (url !== "") blockedChannels.urls.push(url);
+    if (nme !== "") blockedChannels.nmes.push(nme);
+  
+    await extStorage.local.set({ blockedChannels });
+    await removeBlockedVideos(extStorage);
+  
+    dummyElementClick();
+  }
 };
 async function btnInterestEvent(link) {
   // 관심 없음 click event
@@ -197,12 +202,14 @@ async function btnInterestEvent(link) {
   if (!extStorage) return;
   const { blockedChannels = { nmes: [], urls: [], links: [] } } = await extStorage.local.get("blockedChannels");
 
-  if (link !== "") blockedChannels.links.push(link);
+  if (link === "" || (link !== "" && blockedChannels.links.includes(link))) return;
+  if (link !== "") {
+    blockedChannels.links.push(link);
+    await extStorage.local.set({ blockedChannels });
+    await removeBlockedVideos(extStorage);
 
-  await extStorage.local.set({ blockedChannels });
-  await removeBlockedVideos(extStorage);
-
-  dummyElementClick();
+    dummyElementClick();
+  }
 };
 
 function makeBtn(el, _data) {
@@ -248,7 +255,7 @@ function makeBtn(el, _data) {
   BTNS.btnInterest.classList.add("btn-interest");
   LIST_WRAP.appendChild(BTNS.btnInterest);
 
-  if (BTNS.btnBlocker) BTNS.btnBlocker.addEventListener("click", () => btnBlockerEvent({ link, url, nme }));
+  if (BTNS.btnBlocker) BTNS.btnBlocker.addEventListener("click", () => btnBlockerEvent({ url, nme }));
   if (BTNS.btnInterest) BTNS.btnInterest.addEventListener("click", () => btnInterestEvent(link));
 };
 
