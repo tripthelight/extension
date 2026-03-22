@@ -1,3 +1,32 @@
+// ————————————————————————————————————————————————————————————————————
+// STEP 1 -
+// 초기 or 검색 후 화면일 경우
+// long form : 
+// blockedChannels.urls 차단
+// blockedChannels.nmes 차단
+// short form :
+// short form은 "채널 추천 안함" 이 아니고, "관심없음" 임
+// 그래서 영상 클릭 시 이동하는 주소를 저장해뒀다가 안보이게 함
+// blockedChannels.links 차단
+
+// 영상 상세 화면일 경우
+// 추천영상에는 채널명이 들어감
+// blockedChannels.nmes 차단
+
+// STEP 2 -
+// 초기 or 검색 후 화면일 경우
+// long form 의 "채널 추천 안함" 클릭 시
+// 해당 영상의 채널주소, 채널명을 urls와 nmes에 저장
+// short form 의 "관심없음" 클릭 시
+// 영상 클릭 시 이동하는 주소를 links에 저장
+
+// 영상 상세 화면일 경우
+// 해당 영상의 "채널 추천 안함" 클릭 시
+// 해당 영상의 채널주소, 채널명을 urls와 nmes에 저장
+// 추천 영상의 "채널 추천 안함" 클릭 시
+// 해당 영상의 채널명을 nmes에 저장
+// ————————————————————————————————————————————————————————————————————
+
 const MAX_COUNT = 500;
 const MAX_DELAY = 10;
 
@@ -21,7 +50,13 @@ async function delayedExecution() {
   await delay(1000, true);
 };
 
-async function removeBlockedVideos(extStorage) {
+async function removeBlockedVideos() {
+  const extStorage = findExtStorage();
+
+  if (!extStorage) {
+    throw new Error("Extension storage API is not available.");
+  }
+
   const { blockedChannels = { nmes: [], urls: [], links: [] } } = await extStorage.local.get("blockedChannels");
 
   function findMatchedElements() {
@@ -188,7 +223,7 @@ async function btnBlockerEvent(_data) {
     if (nme !== "") blockedChannels.nmes.push(nme);
   
     await extStorage.local.set({ blockedChannels });
-    await removeBlockedVideos(extStorage);
+    await removeBlockedVideos();
   
     dummyElementClick();
   }
@@ -206,7 +241,7 @@ async function btnInterestEvent(link) {
   if (link !== "") {
     blockedChannels.links.push(link);
     await extStorage.local.set({ blockedChannels });
-    await removeBlockedVideos(extStorage);
+    await removeBlockedVideos();
 
     dummyElementClick();
   }
@@ -418,7 +453,7 @@ window.addEventListener('pageshow', () => {
     // DOM 변경 감지
     // 차단 채널을 삭제하는 건 setInterval 이 아닌 observer에서 실행 
     const observer = new MutationObserver(async (mutations) => {
-      await removeBlockedVideos(extStorage);
+      await removeBlockedVideos();
     });
   
     observer.observe(document.body, {
@@ -473,30 +508,3 @@ window.addEventListener('pageshow', () => {
     console.warn(error?.message ?? "blocking channel extension error.");
   }
 });
-
-// STEP 1 -
-// 초기 or 검색 후 화면일 경우
-// long form : 
-// blockedChannels.urls 차단
-// blockedChannels.nmes 차단
-// short form :
-// short form은 "채널 추천 안함" 이 아니고, "관심없음" 임
-// 그래서 영상 클릭 시 이동하는 주소를 저장해뒀다가 안보이게 함
-// blockedChannels.links 차단
-
-// 영상 상세 화면일 경우
-// 추천영상에는 채널명이 들어감
-// blockedChannels.nmes 차단
-
-// STEP 2 -
-// 초기 or 검색 후 화면일 경우
-// long form 의 "채널 추천 안함" 클릭 시
-// 해당 영상의 채널주소, 채널명을 urls와 nmes에 저장
-// short form 의 "관심없음" 클릭 시
-// 영상 클릭 시 이동하는 주소를 links에 저장
-
-// 영상 상세 화면일 경우
-// 해당 영상의 "채널 추천 안함" 클릭 시
-// 해당 영상의 채널주소, 채널명을 urls와 nmes에 저장
-// 추천 영상의 "채널 추천 안함" 클릭 시
-// 해당 영상의 채널명을 nmes에 저장

@@ -19,6 +19,11 @@ button.btn-interest {
   border-radius: 0;
   border: 0 none;
   cursor: pointer;
+  background-color: transparent;
+}
+button.btn-blocking:hover,
+button.btn-interest:hover {
+  background-color: var(--yt-spec-button-chip-background-hover);
 }
 div.blocking-dummy-elem {
   position: fixed;
