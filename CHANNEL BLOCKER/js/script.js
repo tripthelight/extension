@@ -90,6 +90,106 @@ document.addEventListener("mouseup", () => {
   SCROLL_DATA.activeTarget = null;
 });
 
+function renderArrow(target, key) {
+  if (!target) return;
+
+  const CONTAINER_ELEM = target?.closest("#container.blocking-channel");
+  if (!CONTAINER_ELEM) return;
+  const INNER_ELEM = target?.querySelector("ul.inner");
+  if (!INNER_ELEM) return;
+  const LISTS = INNER_ELEM?.querySelectorAll("li");
+  if (!LISTS || (LISTS && LISTS.length === 0)) return;
+
+  const STYLE_DATA = {
+    wrapWidth: 0,
+    innerWidth: 0,
+    topWidth: 0,
+    bottomWidth: 0,
+  }
+
+  STYLE_DATA.wrapWidth = getWidth(target);
+  STYLE_DATA.innerWidth = getWidth(INNER_ELEM);
+  for (let i = 0; i < LISTS.length; i++) {
+    if (i === 0) STYLE_DATA.topWidth = getWidth(LISTS[i]);
+    if (i === 1) STYLE_DATA.bottomWidth = getWidth(LISTS[i]);
+  };
+
+  if (STYLE_DATA.innerWidth <= STYLE_DATA.wrapWidth) return;
+
+  console.log("리스트 전체 width :::: ", STYLE_DATA.wrapWidth);
+  console.log("INNER width :::::::: ", STYLE_DATA.innerWidth);
+  console.log("li top width :::::::: ", STYLE_DATA.topWidth);
+  console.log("li bottom width :::::::: ", STYLE_DATA.bottomWidth);
+
+  const ARROW_EL = document.createElement("div");
+  ARROW_EL.classList.add("allow");
+  const ARROW_BG_EL_L = document.createElement("div");
+  ARROW_BG_EL_L.classList.add("allow-bg");
+  ARROW_BG_EL_L.classList.add("allow-bg-l");
+  const ARROW_BG_EL_R = document.createElement("div");
+  ARROW_BG_EL_R.classList.add("allow-bg");
+  ARROW_BG_EL_R.classList.add("allow-bg-r");
+  target.appendChild(ARROW_EL);
+  target.appendChild(ARROW_BG_EL_L);
+  target.appendChild(ARROW_BG_EL_R);
+
+  const ARROW_STYLE = {
+    nme: {
+      r: 0,
+      t: 0,
+      bg: {
+        h: 0,
+        t: 0,
+        l: 0, 
+        r: 0, 
+      }
+    },
+    url: {
+      r: 0,
+      t: 0,
+      bg: {
+        h: 0,
+        t: 0,
+        l: 0, 
+        r: 0, 
+      }
+    },
+  };
+  
+  const rootStyle = document.documentElement.style;
+  
+  if (key === "nmes") {
+    ARROW_STYLE.nme.r = window.getComputedStyle(CONTAINER_ELEM).paddingRight;
+    ARROW_STYLE.nme.t = target.offsetTop + (target.clientHeight / 2) - (ARROW_EL.clientHeight / 2);
+    ARROW_STYLE.nme.bg.h = target.clientHeight;
+    ARROW_STYLE.nme.bg.t = target.offsetTop;
+    ARROW_STYLE.nme.bg.l = target.offsetLeft;
+    ARROW_STYLE.nme.bg.r = window.getComputedStyle(CONTAINER_ELEM).paddingRight;
+    
+    rootStyle.setProperty("--pos-list-arrow-nme-r", ARROW_STYLE.nme.r); // 채널명 리스트 화살표 right
+    rootStyle.setProperty("--pos-list-arrow-nme-t", `${ARROW_STYLE.nme.t}px`); // 채널명 리스트 화살표 top
+    rootStyle.setProperty("--len-list-arrow-nme-bg-h", `${ARROW_STYLE.nme.bg.h}px`); // 채널명 리스트 bg height
+    rootStyle.setProperty("--pos-list-arrow-nme-bg-t", `${ARROW_STYLE.nme.bg.t}px`); // 채널명 리스트 bg top
+    rootStyle.setProperty("--pos-list-arrow-nme-bg-l-l", `${ARROW_STYLE.nme.bg.l}px`); // 채널명 리스트 left bg left
+    rootStyle.setProperty("--pos-list-arrow-nme-bg-r-r", ARROW_STYLE.nme.bg.r); // 채널명 리스트 right bg right
+  } else if (key === "urls") {
+    ARROW_STYLE.url.r = window.getComputedStyle(CONTAINER_ELEM).paddingRight;
+    ARROW_STYLE.url.t = target.offsetTop + (target.clientHeight / 2) - (ARROW_EL.clientHeight / 2);
+    ARROW_STYLE.url.bg.h = target.clientHeight;
+    ARROW_STYLE.url.bg.t = target.offsetTop;
+    ARROW_STYLE.url.bg.l = target.offsetLeft;
+    ARROW_STYLE.url.bg.r = window.getComputedStyle(CONTAINER_ELEM).paddingRight;
+    
+    rootStyle.setProperty("--pos-list-arrow-url-r", ARROW_STYLE.url.r); // 채널주소 리스트 화살표 right
+    rootStyle.setProperty("--pos-list-arrow-url-t", `${ARROW_STYLE.url.t}px`); // 채널주소 리스트 화살표 top
+    rootStyle.setProperty("--len-list-arrow-url-bg-h", `${ARROW_STYLE.url.bg.h}px`); // 채널주소 리스트 bg height
+    rootStyle.setProperty("--pos-list-arrow-url-bg-t", `${ARROW_STYLE.url.bg.t}px`); // 채널주소 리스트 bg top
+    rootStyle.setProperty("--pos-list-arrow-url-bg-l-l", `${ARROW_STYLE.url.bg.l}px`); // 채널명 리스트 left bg left
+    rootStyle.setProperty("--pos-list-arrow-url-bg-r-r", ARROW_STYLE.url.bg.r); // 채널명 리스트 right bg right
+  }
+
+};
+
 const renderSplitList = (fragment, key) => {
   const dlList = [...fragment.querySelectorAll("dl")];
   if (dlList.length === 0) return;
@@ -191,8 +291,11 @@ async function initList() {
   renderList(LIST_WORD, blockedChannels.nmes, "nmes");
   renderList(LIST_URL, blockedChannels.urls, "urls");
 
-  bindDragScroll(LIST_WORD, "nmes");
-  bindDragScroll(LIST_URL, "urls");
+  bindDragScroll(LIST_WORD);
+  bindDragScroll(LIST_URL);
+
+  renderArrow(LIST_WORD, "nmes");
+  renderArrow(LIST_URL, "urls");
 }
 
 /**
@@ -236,6 +339,26 @@ function iptDelBtnEvt() {
   bindInputDeleteButton(IPT_NME, BTN_DEL_NME, BTN_ADD_NME);
   bindInputDeleteButton(IPT_URL, BTN_DEL_URL, BTN_ADD_URL);
 };
+
+/**
+ * 유튜브 브라우저에 메시지 전달
+ * @returns 
+ */
+async function sendMessageToBrowser(value, key) {
+  const [tab] = await chrome.tabs.query({
+    active: true,
+    currentWindow: true
+  });
+  if (!tab?.id) return;
+  const response = await chrome.tabs.sendMessage(tab.id, {
+    type: 'RUN_BLOCK',
+    channel: value,
+    key
+  });
+  if (response?.ok) {
+    // console.log('content script에서 RUN_BLOCK로 보낸 함수 실행 성공');
+  }
+}
 
 /**
  * 채널명, 채널주소 추가 버튼 클릭 이벤트
@@ -293,8 +416,9 @@ function addBtnEvt() {
       const inputEl = target.closest(".ipt-block")?.querySelector("input[type='text']");
       if (!inputEl) throw new Error("add forbidden input element failed.");
 
-      const value = inputEl.value.trim();
-      if (value === "") return;
+      const str = inputEl.value.trim();
+      if (str === "") return;
+      const value = key === "urls" && str.startsWith("/@") ? str.slice(2) : str;
 
       const listValues = getListValues(listEl);
       if (listValues.includes(value)) {
@@ -330,17 +454,8 @@ function addBtnEvt() {
       if (!blockedChannels[key].includes(value)) {
         blockedChannels[key].push(value);
         await extStorage.local.set({ blockedChannels });
+        await sendMessageToBrowser(value, key);
       }
-
-      // 유튜브 브라우저에 메시지 전달
-      const [tab] = await chrome.tabs.query({
-        active: true,
-        currentWindow: true
-      });
-      if (!tab?.id) return;
-      await chrome.tabs.sendMessage(tab.id, {
-        type: 'RUN_BLOCK'
-      });
     });
   };
 

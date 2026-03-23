@@ -60,7 +60,7 @@ body {
   line-height: 1.8em;
 }
 #container.blocking-channel .ipt-wrap .ipt-block button.btn-add {
-  color: var(--color-text-muted);
+  color: var(--color-text);
   background: var(--color-surface);
   font-size: 1.2em;
   line-height: 1.2em;
@@ -107,6 +107,7 @@ body {
   transform: translate(-50%, -50%) rotate(-45deg);
 }
 #container.blocking-channel .list {
+  position: relative;
   display: flex;
   justify-content: flex-start;
   align-items: center;
@@ -116,6 +117,7 @@ body {
   margin-top: 0.4em;
   width: 100%;
   max-height: 4.782em;
+  z-index: 1;
   overflow-x: auto;
   overflow-y: hidden;
   /* scroll bar */
@@ -142,10 +144,12 @@ body {
 }
 
 #container.blocking-channel .list .inner {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   height: auto;
   max-height: 3.882em;
+  z-index: 2;
 }
 #container.blocking-channel .list .inner li {
   display: flex;
@@ -199,4 +203,73 @@ body {
 }
 #container.blocking-channel .list .inner dl dd button::after {
   transform: translate(-50%, -50%) rotate(-45deg);
+}
+#container.blocking-channel .list .allow-bg {
+  position: fixed;
+  width: 1.8em;
+  background-color: var(--color-list-arrow-bg);
+  z-index: 3;
+}
+#container.blocking-channel .list.list-word .allow-bg {
+  height: var(--len-list-arrow-nme-bg-h);
+  top: var(--pos-list-arrow-nme-bg-t);
+}
+#container.blocking-channel .list.list-url .allow-bg {
+  height: var(--len-list-arrow-url-bg-h);
+  top: var(--pos-list-arrow-url-bg-t);
+}
+#container.blocking-channel .list .allow-bg-l {
+  background: linear-gradient(to right, var(--color-list-arrow-bg), var(--color-list-arrow-bg-t));
+}
+#container.blocking-channel .list .allow-bg-r {
+  background: linear-gradient(to left, var(--color-list-arrow-bg), var(--color-list-arrow-bg-t));
+}
+#container.blocking-channel .list.list-word .allow-bg-l {
+  left: var(--pos-list-arrow-nme-bg-l-l);
+}
+#container.blocking-channel .list.list-word .allow-bg-r {
+  right: var(--pos-list-arrow-nme-bg-r-r);
+}
+#container.blocking-channel .list.list-url .allow-bg-l {
+  left: var(--pos-list-arrow-url-bg-l-l);
+}
+#container.blocking-channel .list.list-url .allow-bg-r {
+  right: var(--pos-list-arrow-url-bg-r-r);
+}
+#container.blocking-channel .list .allow {
+  position: fixed;
+  width: 1.4em;
+  height: 1.4em;
+  background-color: var(--color-list-arrow-circle);
+  border-radius: 100%;
+  cursor: pointer;
+  z-index: 4;
+}
+#container.blocking-channel .list.list-word .allow {
+  right: var(--pos-list-arrow-nme-r);
+  top: var(--pos-list-arrow-nme-t);
+}
+#container.blocking-channel .list.list-url .allow {
+  right: var(--pos-list-arrow-url-r);
+  top: var(--pos-list-arrow-url-t);
+}
+#container.blocking-channel .list .allow::before,
+#container.blocking-channel .list .allow::after {
+  content: "";
+  display: block;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0.2em;
+  height: 0.4em;
+  background-color: var(--color-list-arrow-line);
+  z-index: 5;
+}
+#container.blocking-channel .list .allow::before {
+  transform: translate(-50%, -50%) rotate(-45deg);
+  margin-left: -0.15em;
+}
+#container.blocking-channel .list .allow::after {
+  transform: translate(-50%, -50%) rotate(45deg);
+  margin-left: 0.15em;
 }

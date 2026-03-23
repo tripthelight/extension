@@ -49,4 +49,7 @@ div.blocking-dummy-elem {
   font-size: 0 !important;
   margin: 0 !important;
   padding: 0 !important;
+  visibility: hidden !important;
+  overflow: hidden !important;
+  display: none !important;
 }

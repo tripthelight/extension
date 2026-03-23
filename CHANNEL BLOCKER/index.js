@@ -50,15 +50,7 @@ async function delayedExecution() {
   await delay(1000, true);
 };
 
-async function removeBlockedVideos() {
-  const extStorage = findExtStorage();
-
-  if (!extStorage) {
-    throw new Error("Extension storage API is not available.");
-  }
-
-  const { blockedChannels = { nmes: [], urls: [], links: [] } } = await extStorage.local.get("blockedChannels");
-
+function removeBlockedVideos(blockedChannels) {
   function findMatchedElements() {
     const titSet = new Set(blockedChannels.nmes);
     const hrefSet = new Set(blockedChannels.urls);
@@ -189,6 +181,19 @@ function findListWrap(el) {
   return null;
 };
 
+function dummyElementEvent() {
+  const DUMMY = { dummyElem: null };
+  DUMMY.dummyElem = document.querySelector("div.blocking-dummy-elem.empty");
+  if (!DUMMY.dummyElem) {
+    DUMMY.dummyElem = document.createElement("div");
+    DUMMY.dummyElem.classList.add("blocking-dummy-elem");
+    DUMMY.dummyElem.classList.add("empty");
+    document.body.appendChild(DUMMY.dummyElem);
+  }
+  setTimeout(() => {
+    DUMMY.dummyElem.remove();
+  }, 100);
+}
 function dummyElementClick() {
   // 검색 후 화면에서 "채널추천안함" 누르면 팝업이 안사라짐
   // 그래서 dummy element click 시킴
@@ -223,8 +228,9 @@ async function btnBlockerEvent(_data) {
     if (nme !== "") blockedChannels.nmes.push(nme);
   
     await extStorage.local.set({ blockedChannels });
-    await removeBlockedVideos();
+    // removeBlockedVideos(blockedChannels);
   
+    dummyElementEvent();
     dummyElementClick();
   }
 };
@@ -241,8 +247,9 @@ async function btnInterestEvent(link) {
   if (link !== "") {
     blockedChannels.links.push(link);
     await extStorage.local.set({ blockedChannels });
-    await removeBlockedVideos();
+    // removeBlockedVideos(blockedChannels);
 
+    dummyElementEvent();
     dummyElementClick();
   }
 };
@@ -452,14 +459,36 @@ window.addEventListener('pageshow', () => {
     // MutationObserver
     // DOM 변경 감지
     // 차단 채널을 삭제하는 건 setInterval 이 아닌 observer에서 실행 
-    const observer = new MutationObserver(async (mutations) => {
-      await removeBlockedVideos();
-    });
+    // *** 자꾸 에러나서 observer 제거
+    // const observer = new MutationObserver((mutations) => {
+    //   removeBlockedVideos();
+    // });
   
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
+    // observer.observe(document.body, {
+    //   childList: true,
+    //   subtree: true
+    // });
+
+    /* const observer = new MutationObserver(async (mutations) => {
+      const extStorage = findExtStorage();
+      if (!extStorage) return;
+      const { blockedChannels = { nmes: [], urls: [], links: [] } } = await extStorage.local.get("blockedChannels");
+      removeBlockedVideos(blockedChannels);
     });
+
+    const targets = [
+      document.querySelector("ytd-continuation-item-renderer"),
+      document.querySelector("ytd-item-section-renderer"),
+      document.querySelector("ytd-watch-next-secondary-results-renderer"),
+      document.querySelector("div.blocking-dummy-elem.empty"),
+    ].filter(Boolean);
+
+    targets.forEach((target) => {
+      observer.observe(target, {
+        childList: true,
+        subtree: true
+      });
+    }); */
 
     document.addEventListener("click", (event) => {
       const vodData = findVodData(event.target);
@@ -509,13 +538,27 @@ window.addEventListener('pageshow', () => {
   }
 });
 
-function runBlockChannels() {
-  console.log('유튜브 페이지에서 차단 로직 실행');
+/**
+ * 상단 확장프로그램 팝업과 통신
+ * @param {string} channel 차단 채널명 or 채널주소
+ * @param {string} key urls | nmes
+ */
+async function runBlockChannels(channel, key) {
+  // console.log('유튜브 페이지에서 차단 로직 실행');
+  // console.log("차단 채널 : ", channel);
+  // console.log("차단 타입 : ", key);
   // 여기서 원하는 DOM 탐색 / 숨김 처리
+  // removeBlockedVideos();
+  dummyElementEvent();
 };
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+/**
+ * 상단 확장프로그램 팝업과 통신
+ * sendResponse 함수는 수신에 대한 응답
+ */
+chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   if (message?.type === 'RUN_BLOCK') {
-    runBlockChannels();
+    const { channel, key } = message;
+    await runBlockChannels(channel, key);
     sendResponse({ ok: true });
   }
 });
