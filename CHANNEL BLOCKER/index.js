@@ -230,8 +230,9 @@ async function btnBlockerEvent(_data) {
     await extStorage.local.set({ blockedChannels });
     // removeBlockedVideos(blockedChannels);
   
-    dummyElementEvent();
+    // dummyElementEvent();
     dummyElementClick();
+
   }
 };
 async function btnInterestEvent(link) {
@@ -249,7 +250,7 @@ async function btnInterestEvent(link) {
     await extStorage.local.set({ blockedChannels });
     // removeBlockedVideos(blockedChannels);
 
-    dummyElementEvent();
+    // dummyElementEvent();
     dummyElementClick();
   }
 };
@@ -333,6 +334,7 @@ function safeDecodeURIComponent(str) {
   }
 };
 
+// https://chatgpt.com/c/69c281ff-91a8-83a9-b814-1e64de0506c5
 function findVodData(target) {
   const PARAMS = {
     type: "",
@@ -361,9 +363,6 @@ function findVodData(target) {
         
         // 해당영상링크(video-id)
         const aEl = wrapEl?.querySelector("a");
-        console.log("쇼츠에 a 있냐 ????????? ", aEl);
-        console.log("쇼츠에 a href 있냐 ???? ", aEl ? aEl?.getAttribute("href") ?? "" : "");
-
         PARAMS.link = aEl ? aEl?.getAttribute("href") ?? "" : "";
       }
     }
@@ -409,7 +408,6 @@ function findVodData(target) {
     target?.closest("yt-lockup-view-model")
   ) {
     // recomn - 채널명, 해당영상링크(video-id)
-
     const wrapEl = target.closest("yt-lockup-view-model");
 
     // 해당영상링크(video-id)
@@ -425,19 +423,51 @@ function findVodData(target) {
     target?.closest("ytd-watch-metadata")
   ) {
     // detail - 채널 주소, 채널명, 해당영상링크(video-id)
-  
     // 해당영상링크(video-id)
     const wrapEl = target.closest("ytd-watch-metadata");
     PARAMS.link = wrapEl.getAttribute("video-id") ?? "";
-
     // 채널명
     const aEl = wrapEl?.querySelector("yt-formatted-string a");
     PARAMS.nme = aEl ? aEl?.innerText ?? "" : "";
-    
     // 채널 주소
     PARAMS.url = aEl ? aEl?.getAttribute("href") ?? "" : "";
-  
     PARAMS.type = "detail";
+  } else if (
+    target?.closest("ytd-grid-video-renderer") &&
+    target?.closest("ytd-browse")?.querySelector("yt-page-header-renderer")
+  ) {
+    const wrapEl = target.closest("ytd-browse");
+    const vodEl = target.closest("ytd-grid-video-renderer");
+    // channelPage - 채널 주소, 채널명, 해당영상링크(video-id)
+    // 해당영상링크(video-id)
+    const aEl = vodEl.querySelector("a");
+    PARAMS.link = aEl ? aEl?.getAttribute("href") ?? "" : "";
+
+    const channelHeader = wrapEl.querySelector("yt-page-header-renderer");
+    // 채널명
+    const nEl = channelHeader?.querySelector("yt-dynamic-text-view-model");
+    const sEl = nEl ? nEl?.querySelector("span.yt-core-attributed-string") : null;
+    PARAMS.nme =  sEl ? sEl?.innerText ?? "" : "";
+    // 채널 주소
+    const uEl = channelHeader?.querySelector("yt-content-metadata-view-model");
+    if (uEl) {
+      const walker = document.createTreeWalker(
+        uEl,
+        NodeFilter.SHOW_TEXT
+      );
+      let node;
+      let foundText = "";
+      while ((node = walker.nextNode())) {
+        const text = node.textContent.trim();
+        if (text.startsWith("@")) {
+          foundText = text;
+          break;
+        }
+      };
+      PARAMS.url = foundText;
+    }
+
+    PARAMS.type = "channelPage";
   }
 
   return {
@@ -459,7 +489,6 @@ window.addEventListener('pageshow', () => {
     // MutationObserver
     // DOM 변경 감지
     // 차단 채널을 삭제하는 건 setInterval 이 아닌 observer에서 실행 
-    // *** 자꾸 에러나서 observer 제거
     // const observer = new MutationObserver((mutations) => {
     //   removeBlockedVideos();
     // });
@@ -490,8 +519,53 @@ window.addEventListener('pageshow', () => {
       });
     }); */
 
+    const observer = new MutationObserver(() => {
+      handleMutation();
+    });
+
+    let isRunning = false;
+    let rerunRequested = false;
+
+    async function handleMutation() {
+      if (isRunning) {
+        rerunRequested = true;
+        return;
+      }
+
+      isRunning = true;
+
+      try {
+        const extStorage = findExtStorage();
+        if (!extStorage) return;
+
+        const result = await extStorage.local.get("blockedChannels");
+        const blockedChannels = result.blockedChannels || {
+          nmes: [],
+          urls: [],
+          links: []
+        };
+
+        removeBlockedVideos(blockedChannels);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        isRunning = false;
+
+        if (rerunRequested) {
+          rerunRequested = false;
+          handleMutation();
+        }
+      }
+    }
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
     document.addEventListener("click", (event) => {
       const vodData = findVodData(event.target);
+      if (vodData.type === "") return;
 
       waitElement('ytd-popup-container', (el) => {
         let waitCnt = 0;

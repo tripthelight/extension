@@ -1,0 +1,123 @@
+1. 메인화면
+body > ytd-app > ytd-page-manager > ytd-browse > ytd-two-column-browse-results-renderer > ytd-rich-grid-renderer
+  1) long
+  > ytd-rich-item-renderer
+  2) short
+  > ytd-rich-section-renderer > ytd-rich-shelf-renderer > ytd-rich-item-renderer
+
+2. 검색 화면
+body > ytd-app > ytd-page-manager > ytd-search > ytd-two-column-search-results-renderer > ytd-section-list-renderer > ytd-item-section-renderer
+  1) long
+   > ytd-video-renderer
+  2) short
+   > grid-shelf-view-model > div.ytGridShelfViewModelGridShelfRow > div.ytGridShelfViewModelGridShelfItem
+
+3. 상세 화면
+body > ytd-app > ytd-page-manager > ytd-watch-flexy
+  1) 해당영상
+   > ytd-watch-metadata > ytd-menu-renderer
+  2) 추천영상 long
+   > ytd-watch-next-secondary-results-renderer > ytd-item-section-renderer > yt-lockup-view-model
+  3) 재생목록
+   > ytd-playlist-panel-renderer
+    # 재생목록 전체 - 재생목록 상단 타이틀 영역에 있는 점3개 버튼 - 이 경우는 추천안함, 관심없음 버튼 필요없음
+     > div#header
+    # 재생목록 리스트 
+     > div#items > ytd-playlist-panel-video-renderer
+
+4. 쇼츠 화면
+body > ytd-app > ytd-page-manager > ytd-shorts
+  # video 
+   > ytd-reel-video-renderer > ytd-player
+  # next button (next button element : const BTN = document.querySelector("#navigation-button-down ytd-button-renderer yt-button-shape button.yt-spec-button-shape-next");)
+   > div.navigation-button > ytd-button-renderer > yt-button-shape > button.yt-spec-button-shape-next
+
+5. 채널 페이지
+  1) 홈
+   > ytd-section-list-renderer > ytd-item-section-renderer
+    # 최상단에서 현재 재생 중인 영상 - 여기는 점3개 버튼 없음
+     > ytd-channel-video-player-renderer > ytd-channel-video-player-renderer
+    # 실시간 스트림 n개
+     > ytd-channel-featured-content-renderer > ytd-video-renderer
+    # 그 하위 영상 리스트(동영상위에 점3개 버튼 있는 동영상만 해당)
+     > ytd-shelf-renderer > yt-horizontal-list-renderer > ytd-grid-video-renderer
+    # Shorts
+     > ytd-reel-shelf-renderer
+      * short 영상 리스트 상단 영역 점3개 버튼 - 이 경우는 추천안함, 관심없음 버튼 필요없음
+       > div#header
+      * short 영상 리스트
+       > div#contents > yt-horizontal-list-renderer > ytm-shorts-lockup-view-model-v2
+
+  2) 동영상
+  body > ytd-app > ytd-page-manager > ytd-browse > ytd-two-column-browse-results-renderer > ytd-rich-grid-renderer > ytd-rich-item-renderer
+  3) Shorts
+  body > ytd-app > ytd-page-manager > ytd-browse > ytd-two-column-browse-results-renderer > ytd-rich-grid-renderer > ytd-rich-item-renderer
+  4) 라이브
+  body > ytd-app > ytd-page-manager > ytd-browse > ytd-two-column-browse-results-renderer > ytd-rich-grid-renderer > ytd-rich-item-renderer
+
+===============================================
+
+유튜브 화면 별 영상 element의 경로는 위와 같다.
+
+-------------------------------------------
+
+1. 첫 진입 메인화면 > long form 영상
+2. 첫 진입 메인화면 > shorts 영상
+3. 검색 후 화면 > long form 영상
+4. 검색 후 화면 > shorts 영상
+5. 상세화면 > 해당 영상
+6. 상세화면 > 해당 영상 오른쪽 추천영상
+7. 쇼츠 영상 화면
+8. 채널페이지 > 홈 > 최상단에서 현재 재생중인 영상
+9. 채널페이지 > 홈 > 실시간 스트림 n개
+10. 채널페이지 > 홈 > 그 하위 영상 리스트
+11. 채널페이지 > 홈 > Shorts
+12. 채널페이지 > 동영상
+13. 채널페이지 > Shorts
+14. 채널페이지 > 라이브
+
+-------------------------------------------
+
+영상 element 내부에 있는 점 3개 버튼을 눌렀을 때 위 14가지 경우 중 어느경우에 해당하는지 알아내야 한다.
+효율적인 방법을 알려줘!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

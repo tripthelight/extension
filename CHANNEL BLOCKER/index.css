@@ -1,11 +1,11 @@
 button.btn-blocking,
 button.btn-interest {
+  width: 100%;
   color: var(--yt-spec-text-primary);
   white-space: nowrap;
   display: flex;
   flex-direction: row;
-  flex: 1;
-  flex-basis: 0.000000001px;
+  flex-grow: 1;
   font-family: "Roboto", "Arial", sans-serif;
   font-size: 1.4rem;
   line-height: 2rem;
