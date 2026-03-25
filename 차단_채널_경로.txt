@@ -1,16 +1,33 @@
 1. 메인화면
 body > ytd-app > ytd-page-manager > ytd-browse > ytd-two-column-browse-results-renderer > ytd-rich-grid-renderer
   1) long
-  > ytd-rich-item-renderer
-  2) short
-  > ytd-rich-section-renderer > ytd-rich-shelf-renderer > ytd-rich-item-renderer
+   > ytd-rich-item-renderer
+    - long 의 채널명
+     > yt-lockup-metadata-view-model > yt-content-metadata-view-model > a 의 innerText
+    - long 의 채널 주소
+     > yt-lockup-metadata-view-model > yt-content-metadata-view-model > a 의 href를 decodeURIComponent 한 결과 문자열
+    - long 클릭 시 이동하는 url
+       > yt-lockup-view-model > a 들 중 href가 "/watch" 로 시작하고, "?v=" QUERY를 가진 첫번째 a의 href 문자열에서 시작 문자열인 "/watch?v=" 를 제거하고 남은 문자열이 해당 long 영상의 video-id가 됨
+    - 나는 점3개 버튼을 클릭한 long 영상의 채널명, 채널 주소, video-id 가 필요함
+  2) shorts
+   > ytd-rich-section-renderer > ytd-rich-shelf-renderer > ytd-rich-item-renderer
+    - shorts 클릭 시 이동하는 url
+       > ytd-rich-item-renderer 하위 a tag 중 href가 "/shorts/" 로 시작하는 첫번째 a tag 의 href 문자열에서, 시작 문자열인 "/shorts/" 문자열를 제거한 후 나머지 문자열이 해당 shorts 영상의 video-id가 됨
+    - 나는 점3개 버튼을 클릭한 shorts 영상의 video-id가 필요함
+
+
 
 2. 검색 화면
 body > ytd-app > ytd-page-manager > ytd-search > ytd-two-column-search-results-renderer > ytd-section-list-renderer > ytd-item-section-renderer
   1) long
    > ytd-video-renderer
+    - long 의 채널명
+       >  >  >  >  >  >  >  >  >  >  >  > 
   2) short
    > grid-shelf-view-model > div.ytGridShelfViewModelGridShelfRow > div.ytGridShelfViewModelGridShelfItem
+
+
+
 
 3. 상세 화면
 body > ytd-app > ytd-page-manager > ytd-watch-flexy
@@ -25,12 +42,18 @@ body > ytd-app > ytd-page-manager > ytd-watch-flexy
     # 재생목록 리스트 
      > div#items > ytd-playlist-panel-video-renderer
 
+
+
+
 4. 쇼츠 화면
 body > ytd-app > ytd-page-manager > ytd-shorts
   # video 
    > ytd-reel-video-renderer > ytd-player
   # next button (next button element : const BTN = document.querySelector("#navigation-button-down ytd-button-renderer yt-button-shape button.yt-spec-button-shape-next");)
    > div.navigation-button > ytd-button-renderer > yt-button-shape > button.yt-spec-button-shape-next
+
+
+
 
 5. 채널 페이지
   1) 홈
@@ -54,6 +77,9 @@ body > ytd-app > ytd-page-manager > ytd-shorts
   body > ytd-app > ytd-page-manager > ytd-browse > ytd-two-column-browse-results-renderer > ytd-rich-grid-renderer > ytd-rich-item-renderer
   4) 라이브
   body > ytd-app > ytd-page-manager > ytd-browse > ytd-two-column-browse-results-renderer > ytd-rich-grid-renderer > ytd-rich-item-renderer
+
+
+
 
 ===============================================
 
