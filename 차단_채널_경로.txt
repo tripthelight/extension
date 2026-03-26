@@ -57,15 +57,15 @@ body > ytd-app > ytd-page-manager > ytd-shorts
 
 5. 채널 페이지
   1) 홈
-   > ytd-section-list-renderer > ytd-item-section-renderer
+  body > ytd-app > ytd-page-manager > ytd-browse > ytd-two-column-browse-results-renderer > ytd-section-list-renderer
     # 최상단에서 현재 재생 중인 영상 - 여기는 점3개 버튼 없음
-     > ytd-channel-video-player-renderer > ytd-channel-video-player-renderer
+     > ytd-item-section-renderer > ytd-channel-video-player-renderer
     # 실시간 스트림 n개
-     > ytd-channel-featured-content-renderer > ytd-video-renderer
+     > ytd-item-section-renderer > ytd-channel-featured-content-renderer > ytd-video-renderer
     # 그 하위 영상 리스트(동영상위에 점3개 버튼 있는 동영상만 해당)
-     > ytd-shelf-renderer > yt-horizontal-list-renderer > ytd-grid-video-renderer
+     > ytd-item-section-renderer > ytd-shelf-renderer > yt-horizontal-list-renderer > ytd-grid-video-renderer
     # Shorts
-     > ytd-reel-shelf-renderer
+     > ytd-item-section-renderer > ytd-reel-shelf-renderer
       * short 영상 리스트 상단 영역 점3개 버튼 - 이 경우는 추천안함, 관심없음 버튼 필요없음
        > div#header
       * short 영상 리스트

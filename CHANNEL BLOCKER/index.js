@@ -478,137 +478,140 @@ function findVodData(target) {
   };
 };
 
+function init() {
+  const extStorage = findExtStorage();
 
+  if (!extStorage) {
+    throw new Error("Extension storage API is not available.");
+  }
 
-window.addEventListener('pageshow', () => {
-  try {
+  // MutationObserver
+  // DOM 변경 감지
+  // 차단 채널을 삭제하는 건 setInterval 이 아닌 observer에서 실행 
+  // const observer = new MutationObserver((mutations) => {
+  //   removeBlockedVideos();
+  // });
+
+  // observer.observe(document.body, {
+  //   childList: true,
+  //   subtree: true
+  // });
+
+  /* const observer = new MutationObserver(async (mutations) => {
     const extStorage = findExtStorage();
+    if (!extStorage) return;
+    const { blockedChannels = { nmes: [], urls: [], links: [] } } = await extStorage.local.get("blockedChannels");
+    removeBlockedVideos(blockedChannels);
+  });
 
-    if (!extStorage) {
-      throw new Error("Extension storage API is not available.");
-    }
+  const targets = [
+    document.querySelector("ytd-continuation-item-renderer"),
+    document.querySelector("ytd-item-section-renderer"),
+    document.querySelector("ytd-watch-next-secondary-results-renderer"),
+    document.querySelector("div.blocking-dummy-elem.empty"),
+  ].filter(Boolean);
 
-    // MutationObserver
-    // DOM 변경 감지
-    // 차단 채널을 삭제하는 건 setInterval 이 아닌 observer에서 실행 
-    // const observer = new MutationObserver((mutations) => {
-    //   removeBlockedVideos();
-    // });
-  
-    // observer.observe(document.body, {
-    //   childList: true,
-    //   subtree: true
-    // });
-
-    /* const observer = new MutationObserver(async (mutations) => {
-      const extStorage = findExtStorage();
-      if (!extStorage) return;
-      const { blockedChannels = { nmes: [], urls: [], links: [] } } = await extStorage.local.get("blockedChannels");
-      removeBlockedVideos(blockedChannels);
-    });
-
-    const targets = [
-      document.querySelector("ytd-continuation-item-renderer"),
-      document.querySelector("ytd-item-section-renderer"),
-      document.querySelector("ytd-watch-next-secondary-results-renderer"),
-      document.querySelector("div.blocking-dummy-elem.empty"),
-    ].filter(Boolean);
-
-    targets.forEach((target) => {
-      observer.observe(target, {
-        childList: true,
-        subtree: true
-      });
-    }); */
-
-    const observer = new MutationObserver(() => {
-      handleMutation();
-    });
-
-    let isRunning = false;
-    let rerunRequested = false;
-
-    async function handleMutation() {
-      if (isRunning) {
-        rerunRequested = true;
-        return;
-      }
-
-      isRunning = true;
-
-      try {
-        const extStorage = findExtStorage();
-        if (!extStorage) return;
-
-        const result = await extStorage.local.get("blockedChannels");
-        const blockedChannels = result.blockedChannels || {
-          nmes: [],
-          urls: [],
-          links: []
-        };
-
-        removeBlockedVideos(blockedChannels);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        isRunning = false;
-
-        if (rerunRequested) {
-          rerunRequested = false;
-          handleMutation();
-        }
-      }
-    }
-
-    observer.observe(document.body, {
+  targets.forEach((target) => {
+    observer.observe(target, {
       childList: true,
       subtree: true
     });
+  }); */
 
-    document.addEventListener("click", (event) => {
-      const vodData = findVodData(event.target);
-      if (vodData.type === "") return;
+  const observer = new MutationObserver(() => {
+    handleMutation();
+  });
 
-      waitElement('ytd-popup-container', (el) => {
-        let waitCnt = 0;
-        let waitDropdown = 0;
+  let isRunning = false;
+  let rerunRequested = false;
 
-        const checkDropdown = () => {
-          const dropdown = el.querySelectorAll('tp-yt-iron-dropdown');
+  async function handleMutation() {
+    if (isRunning) {
+      rerunRequested = true;
+      return;
+    }
 
-          if (!dropdown || dropdown.length === 0) {
-            waitDropdown += 1;
-            if (waitDropdown >= MAX_COUNT) {
-              return;
-            }
-            setTimeout(checkDropdown, MAX_DELAY);
-            return;
-          }
+    isRunning = true;
 
-          let foundVisible = false;
-          for (let i = 0; i < dropdown.length; i++) {
-            const _el = dropdown[i];
-            const wasVisible = getComputedStyle(_el).display !== 'none';
-            if (wasVisible) {
-              makeBtn(_el, vodData);
-              foundVisible = true;
-              break;
-            }
-          }
+    try {
+      const extStorage = findExtStorage();
+      if (!extStorage) return;
 
-          if (foundVisible) {
-            return;
-          }
-          waitCnt += 1;
-          if (waitCnt >= MAX_COUNT) {
+      const result = await extStorage.local.get("blockedChannels");
+      const blockedChannels = result.blockedChannels || {
+        nmes: [],
+        urls: [],
+        links: []
+      };
+
+      removeBlockedVideos(blockedChannels);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      isRunning = false;
+
+      if (rerunRequested) {
+        rerunRequested = false;
+        handleMutation();
+      }
+    }
+  }
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+
+  document.addEventListener("click", (event) => {
+    const vodData = findVodData(event.target);
+    if (vodData.type === "") return;
+
+    waitElement('ytd-popup-container', (el) => {
+      let waitCnt = 0;
+      let waitDropdown = 0;
+
+      const checkDropdown = () => {
+        const dropdown = el.querySelectorAll('tp-yt-iron-dropdown');
+
+        if (!dropdown || dropdown.length === 0) {
+          waitDropdown += 1;
+          if (waitDropdown >= MAX_COUNT) {
             return;
           }
           setTimeout(checkDropdown, MAX_DELAY);
-        };
+          return;
+        }
 
-        checkDropdown();
-      });
-    }, true);
+        let foundVisible = false;
+        for (let i = 0; i < dropdown.length; i++) {
+          const _el = dropdown[i];
+          const wasVisible = getComputedStyle(_el).display !== 'none';
+          if (wasVisible) {
+            makeBtn(_el, vodData);
+            foundVisible = true;
+            break;
+          }
+        }
+
+        if (foundVisible) {
+          return;
+        }
+        waitCnt += 1;
+        if (waitCnt >= MAX_COUNT) {
+          return;
+        }
+        setTimeout(checkDropdown, MAX_DELAY);
+      };
+
+      checkDropdown();
+    });
+  }, true);
+}
+
+window.addEventListener('pageshow', () => {
+  try {
+    // init();
+    initYoutubeMenuClassifier();
   } catch (error) {
     console.warn(error?.message ?? "blocking channel extension error.");
   }
