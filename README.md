@@ -3,7 +3,9 @@
 ## CHANNEL BLOCKER
 1) 채널명의 href가 "/@" 로 시작할 것으로 기대했는데, "/channel/UCzJ7PrO2pmCVGgSq18Fr0Dg" 형식의 href 가 있음
    - 여기는 유튜버 한 명의 개인채널이 아니고, 특정 주제로 구성된 테마 체널인것으로 예상됨(https://www.youtube.com/watch?v=YeIxYcG0YdM&list=RDYeIxYcG0YdM&start_radio=1)
-   - 테마 채널이 아니고, 한 유튜버의 채널과 완전 동일한 경우도 있음(https://www.youtube.com/channel/UCz2w1NbLL_hUphhsZRAFljg)
+   - 테마 채널이 아니고, 한 유튜버의 채널과 완전 동일한 경우도 있음 - 아래 두 url 진입 시 화면이 동일함
+     - https://www.youtube.com/@staywithme_miki
+     - https://www.youtube.com/channel/UCz2w1NbLL_hUphhsZRAFljg
    - 이럴 경우 채널 주소(channelHandle)가 빈문자가 됨
 2) 로그인 되어있는 상태일 경우, 
    - tp-yt-iron-dropdown > yt-list-item-view-model 에 "채널 추천 안함", "관심 없음"이 있는 경우
