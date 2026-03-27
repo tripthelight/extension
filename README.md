@@ -1,7 +1,7 @@
 # 크롬 기반 브라우저 확장 프로그램
 
 ## CHANNEL BLOCKER
-1) 채널명의 href가 "/@" 로 시작할 것으로 기대했는데, "/channel/UCzJ7PrO2pmCVGgSq18Fr0Dg" 형식의 href 가 있음
+1) 채널명(channelName)의 href가 "/@" 로 시작할 것으로 기대했는데, "/channel/UCzJ7PrO2pmCVGgSq18Fr0Dg" 형식의 href 가 있음
    - 여기는 유튜버 한 명의 개인채널이 아니고, 특정 주제로 구성된 테마 체널인것으로 예상됨
      - Susumu Hirasawa - Topic
      - https://www.youtube.com/watch?v=YeIxYcG0YdM&list=RDYeIxYcG0YdM&start_radio=1
