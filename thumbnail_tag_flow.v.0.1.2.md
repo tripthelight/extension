@@ -23,7 +23,7 @@
       "list": "yt-lockup-view-model",
     },
     "Shorts": { // 추천영상 Shorts 썸네일
-      "list": "" // TODO: 언젠가 뜨겠지..
+      "list": "ytm-shorts-lockup-view-model-v2" // TODO: 언젠가 뜨겠지..
     },
   },
   "shorts": { // 위 아래로 스크롤 하면서 Shorts 감상하는 화면 - location.pathname: "/shorts" 문자로 시작하고 "/shorts/" 문자 뒤에 video-id 문자열이 붙음
@@ -52,7 +52,10 @@
     "streams": { // 라이브 탭 - location.pathname: "/" 문자 뒤에 채널 주소가 붙고, 그 다음에 "/streams" 가 붙음, ex. "/@aabbcc/streams"
       "list": "ytd-rich-item-renderer",
     },
-  }
+  },
+  "playlist": { // 상세화면을 제외한 화면 오른쪽 하단에 팝업형태로 떠있는 재생목록 playlist -> 이전에 봤던 상세화면의 영상의 어떤 플레이리스트에 솎한 영상일 경우 이 playlist 팝업이 활성화됨
+    "list": "ytd-playlist-panel-video-renderer"
+  },
 }
 ```
 
@@ -83,8 +86,9 @@
 * `<yt-lockup-view-model>` tag가 하나의 long form 영상 썸네일 리스트 tag가 되어 반복된다.
 * `<yt-lockup-view-model>` tag 리스트들을 순회시키는 tag는 `<yt-lockup-view-model>` tag의 바로 한 단계 위의 `parentElement` tag다.
 
-### 추천영상 Shorts <!-- TODO: 언젠가 뜨겠지.. -->
-* `<>` tag 내부에서 `<>` tag가 하나의 추천 Shorts 영상 썸네일 리스트 tag가 되어 반복된다.
+### 추천영상 Shorts
+`<ytm-shorts-lockup-view-model-v2>` tag가 하나의 추천 Shorts 영상 썸네일 리스트 tag가 되어 반복된다.
+* `<ytm-shorts-lockup-view-model-v2>` tag 리스트들을 순회시키는 tag는 `<ytm-shorts-lockup-view-model-v2>` tag의 바로 한 단계 위의 `parentElement` tag다.
 
 ## Shorts 화면
 
@@ -125,9 +129,20 @@
 * `<ytd-rich-item-renderer>` tag가 하나의 라이브 영상 썸네일 리스트 tag가 되어 반복된다.
 * `<ytd-rich-item-renderer>` tag 리스트들을 순회시키는 tag는 `<ytd-rich-item-renderer>` tag의 바로 한 단계 위의 `parentElement` tag다.
 
+## 재생목록 팝업
+* `<ytd-playlist-panel-video-renderer>` tag가 하나의 라이브 영상 썸네일 리스트 tag가 되어 반복된다.
+* `<ytd-playlist-panel-video-renderer>` tag 리스트들을 순회시키는 tag는 `<ytd-playlist-panel-video-renderer>` tag의 바로 한 단계 위의 `parentElement` tag다.
+
+
+<br>
+<br>
 <hr>
 <hr>
 <hr>
+<br>
+<br>
+
+
 
 # 현재까지 파악된 tag - 변경 감시가 필요한 tag
 1. `<ytd-rich-item-renderer>`
@@ -139,7 +154,8 @@
 7. `#navigation-button-down ytd-button-renderer yt-button-shape button.yt-spec-button-shape-next`
 8. `<yt-page-header-view-model>`
 9. `<ytd-grid-video-renderer>`
-10.`<ytm-shorts-lockup-view-model-v2>`
+10. `<ytm-shorts-lockup-view-model-v2>`
+11. `<ytd-playlist-panel-video-renderer>`
 
 ## 전략
 1. 변경감시가 필요한 최소한의 tag만 추려서 정리했다.
