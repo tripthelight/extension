@@ -11,7 +11,9 @@
   "content_scripts": [
     {
       "matches": ["https://*.youtube.com/*"],
-      "js": ["module/findVodData.js", "index.js"],
+      "js": [
+        "module/findVodListTag.js"
+      ],
       "css": ["index.css"]
     }
   ]
