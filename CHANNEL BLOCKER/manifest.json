@@ -12,7 +12,7 @@
     {
       "matches": ["https://*.youtube.com/*"],
       "js": [
-        "module/findVodListTag.js"
+        "module/fetchData.js"
       ],
       "css": ["index.css"]
     }
