@@ -263,7 +263,8 @@ const obj = {
         }
       ],
       "timestamp":{
-        "seconds":"1774790990","nanos":593921470
+        "seconds":"1774790990",
+        "nanos":593921470
       }
     }
   }
