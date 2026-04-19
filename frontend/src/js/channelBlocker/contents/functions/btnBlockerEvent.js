@@ -1,8 +1,12 @@
 import { isDatabaseClosingError, openDB } from "@/js/channelBlocker/contents/database";
 import responseChannelName from "@/js/channelBlocker/contents/functions/fetch/responseChannelName";
-import { saveBlockedData } from "@/js/channelBlocker/contents/functions/findChannelName";
+import {
+  saveBlockedChannelAddress,
+  saveBlockedData,
+} from "@/js/channelBlocker/contents/functions/findChannelName";
 import { runChannelBlocker as removeBlockerThumb } from "@/js/channelBlocker/contents/functions/removeBlockerThumb";
 import hideShortsByVideoId from "@/js/channelBlocker/contents/functions/hideShortsByVideoId";
+import hideVideoCardsByVideoId from "@/js/channelBlocker/contents/functions/hideVideoCardsByVideoId";
 import dummyElementClick from "@/js/channelBlocker/contents/functions/dummyElementClick";
 import { openWatchUndoOverlay } from "@/js/channelBlocker/contents/functions/watchUndoOverlay";
 import enforceShortsUndoOverlay from "@/js/channelBlocker/contents/functions/shortsUndoOverlay";
@@ -10,6 +14,9 @@ import resetRemoveTagClass from "@/js/channelBlocker/contents/functions/resetRem
 import scheduleRemoveVodThumb from "@/js/channelBlocker/contents/functions/scheduleRemoveVodThumb";
 import { t } from "@/js/channelBlocker/contents/i18n";
 import { removeBlockedChannelFromStorage } from "@/js/channelBlocker/contents/functions/storage/blockedChannelsStorage";
+import { removeBlobStringItem } from "@/js/channelBlocker/contents/functions/database/blobStringListStore";
+import extractChannelDataFromCard from "@/js/channelBlocker/contents/functions/extractChannelDataFromCard";
+import { getRecentMenuTargetCard } from "@/js/channelBlocker/contents/functions/contextMenuTargetStore";
 import {
   clearPendingThumbs,
   markPendingThumbsByVideoIds,
@@ -182,21 +189,35 @@ async function removeBlockedChannelNameFromIndexedDb(database, channelName) {
 /**
  * @typedef {Object} ChannelNameResponse
  * @property {string} channelName
+ * @property {string=} channelUrl
  */
 
 /**
  * @param {string} videoId
- * @returns {Promise<string|null>}
+ * @returns {Promise<{channelName: string, channelUrl: string}|null>}
  */
-async function fetchChannelName(videoId) {
+async function fetchChannelData(videoId) {
+  const cardChannelData = extractChannelDataFromCard(getRecentMenuTargetCard());
+  if (cardChannelData?.channelName || cardChannelData?.channelUrl) {
+    return {
+      channelName: cardChannelData.channelName,
+      channelUrl: cardChannelData.channelUrl,
+    };
+  }
+
   /** @type {ChannelNameResponse | null | undefined} */
   const response = await responseChannelName(videoId);
+  const channelName = String(response?.channelName || "").trim();
+  const channelUrl = String(response?.channelUrl || "").trim();
 
-  if (!response || !response.channelName) {
+  if (!channelName && !channelUrl) {
     return null;
   }
 
-  return response.channelName;
+  return {
+    channelName,
+    channelUrl,
+  };
 }
 
 /**
@@ -216,20 +237,32 @@ export async function handleBlockChannelClick(event) {
   const videoId = getVideoIdFromEvent(event);
   if (!videoId) return;
 
+  hideVideoCardsByVideoId(videoId);
   markPendingThumbsByVideoIds([videoId]);
   dummyElementClick();
 
-  const channelName = await fetchChannelName(videoId);
+  const channelData = await fetchChannelData(videoId);
+  if (!channelData) {
+    clearPendingThumbs([videoId]);
+    return;
+  }
+  const { channelName, channelUrl } = channelData;
   if (!channelName) {
+    await saveBlockedChannelAddress(channelUrl);
+    await removeBlockerThumb();
     clearPendingThumbs([videoId]);
     return;
   }
 
   let isNewlyAdded = false;
+  let undoChannelAddress = "";
   const value = await executeWithDbRecovery((database) => readChannelNamesValue(database));
 
   if (!value) {
-    await saveBlockedData(channelName, [], "blocker");
+    const saved = await saveBlockedData(channelName, [], "blocker", { channelUrl });
+    if (saved.savedChannelAddress?.wasAdded) {
+      undoChannelAddress = saved.savedChannelAddress.value;
+    }
     if (!isShortsPage()) {
       hideShortsByVideoId(videoId);
     }
@@ -238,13 +271,17 @@ export async function handleBlockChannelClick(event) {
     const channelNames = await parseChannelNamesValue(value);
 
     if (hasChannelName(channelNames, channelName)) {
+      await saveBlockedChannelAddress(channelUrl);
       clearPendingThumbs([videoId]);
       removeBlockerThumb();
       if (!isShortsPage()) {
         hideShortsByVideoId(videoId);
       }
     } else {
-      await saveBlockedData(channelName, channelNames, "blocker");
+      const saved = await saveBlockedData(channelName, channelNames, "blocker", { channelUrl });
+      if (saved.savedChannelAddress?.wasAdded) {
+        undoChannelAddress = saved.savedChannelAddress.value;
+      }
       if (!isShortsPage()) {
         hideShortsByVideoId(videoId);
       }
@@ -267,6 +304,13 @@ export async function handleBlockChannelClick(event) {
           removeBlockedChannelNameFromIndexedDb(database, channelName)
         );
         await removeBlockedChannelFromStorage("nmes", channelName);
+
+        if (undoChannelAddress) {
+          await executeWithDbRecovery((database) =>
+            removeBlobStringItem(database, "u", "channelAddresses", undoChannelAddress)
+          );
+          await removeBlockedChannelFromStorage("urls", undoChannelAddress);
+        }
 
         resetRemoveTagClass();
         scheduleRemoveVodThumb();

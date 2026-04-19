@@ -24,16 +24,20 @@ function findExtStorage() {
  * @returns {string[]}
  */
 function normalizeStringList(value) {
-  return Array.isArray(value)
-    ? value.map((item) => String(item || "").trim()).filter((item) => item !== "")
-    : [];
+  if (!Array.isArray(value)) return [];
+
+  const items = value
+    .map((item) => String(item || "").trim())
+    .filter((item) => item !== "");
+
+  return [...new Set(items)];
 }
 
 /**
  * @param {unknown} value
  * @returns {{nmes: string[], urls: string[], links: string[]}}
  */
-function normalizeBlockedChannels(value) {
+export function normalizeBlockedChannels(value) {
   /** @type {{nmes?: unknown, urls?: unknown, links?: unknown}} */
   const source = value && typeof value === "object" ? value : {};
 

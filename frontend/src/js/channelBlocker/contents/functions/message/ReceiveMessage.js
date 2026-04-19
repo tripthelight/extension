@@ -18,9 +18,14 @@ import blockSelectedWatchRecommendationCard, {
   getSelectedWatchRecommendationVideoId,
 } from "@/js/channelBlocker/contents/functions/blockSelectedWatchRecommendationCard";
 import {
+  getBlockedChannelsFromStorage,
   removeBlockedChannelFromStorage,
   upsertBlockedChannelToStorage,
 } from "@/js/channelBlocker/contents/functions/storage/blockedChannelsStorage";
+import extractChannelDataFromCard from "@/js/channelBlocker/contents/functions/extractChannelDataFromCard";
+import { getRecentContextMenuWatchRecommendationCard } from "@/js/channelBlocker/contents/functions/contextMenuTargetStore";
+import hideVideoCardsByVideoId from "@/js/channelBlocker/contents/functions/hideVideoCardsByVideoId";
+import { normalizeChannelAddress } from "@/js/channelBlocker/common/channelAddress";
 
 /**
  * @typedef {"urls" | "nmes"} BlockKey
@@ -88,47 +93,6 @@ async function ensureDatabase() {
  * @param {string} raw
  * @returns {string}
  */
-function normalizeChannelAddress(raw) {
-  const value = String(raw || "").trim();
-  if (!value) return "";
-
-  let decoded = value;
-  try {
-    decoded = decodeURIComponent(value);
-  } catch {
-    decoded = value;
-  }
-
-  const sources = [decoded];
-
-  try {
-    const parsed = /^https?:\/\//i.test(decoded)
-      ? new URL(decoded)
-      : new URL(decoded, "https://www.youtube.com");
-
-    sources.push(parsed.pathname);
-  } catch {
-    // ignore invalid URL string
-  }
-
-  for (const source of sources) {
-    const match = String(source || "").match(/@([^/?#&\s]+)/);
-    if (match && match[1]) {
-      return match[1].trim();
-    }
-  }
-
-  const withoutQuery = decoded.split(/[?#&]/)[0] || "";
-  const withoutOrigin = withoutQuery.replace(/^https?:\/\/[^/]+/i, "");
-  const firstSegment = withoutOrigin.replace(/^\/+/, "").split("/")[0] || "";
-
-  return firstSegment.replace(/^@/, "").trim();
-}
-
-/**
- * @param {string} raw
- * @returns {string}
- */
 function normalizeChannelName(raw) {
   return String(raw || "").trim().toLowerCase();
 }
@@ -138,31 +102,16 @@ function normalizeChannelName(raw) {
  * @returns {string}
  */
 function normalizeChannelHandle(raw) {
-  const value = String(raw || "").trim();
-  if (!value) return "";
-
-  let decoded = value;
-  try {
-    decoded = decodeURIComponent(value);
-  } catch {
-    decoded = value;
-  }
-
-  const match = decoded.match(/@([^/?#\s]+)/);
-  if (match && match[1]) {
-    return match[1].trim().toLowerCase();
-  }
-
-  return decoded.replace(/^\/+/, "").replace(/^@/, "").trim().toLowerCase();
+  return normalizeChannelAddress(raw).toLowerCase();
 }
 
 /**
- * @param {IDBDatabase} database
  * @returns {Promise<void>}
  */
-async function syncShortsBlockedState(database) {
-  const blockedChannelNames = await readBlobStringList(database, "b", "channelNames");
-  const blockedChannelHandles = await readBlobStringList(database, "u", "channelAddresses");
+async function syncShortsBlockedState() {
+  const blockedChannels = await getBlockedChannelsFromStorage();
+  const blockedChannelNames = blockedChannels.nmes;
+  const blockedChannelHandles = blockedChannels.urls;
   const blockedChannelSet = new Set(
     blockedChannelNames.map((name) => normalizeChannelName(name)).filter((name) => name !== "")
   );
@@ -238,7 +187,7 @@ async function runBlockChannels(channel, key) {
     }
   }
 
-  await syncShortsBlockedState(database);
+  await syncShortsBlockedState();
   scheduleRemoveVodThumb();
 }
 
@@ -253,6 +202,22 @@ async function upsertBlockedChannelName(database, channelName) {
 
   await upsertBlobStringItemFront(database, "b", "channelNames", normalizedChannel);
   await upsertBlockedChannelToStorage("nmes", normalizedChannel);
+}
+
+/**
+ * @param {IDBDatabase} database
+ * @param {string} channelAddress
+ * @returns {Promise<void>}
+ */
+async function upsertBlockedChannelAddress(database, channelAddress) {
+  const normalizedAddress = normalizeChannelAddress(channelAddress);
+  if (!normalizedAddress) return;
+
+  const channelAddresses = await readBlobStringList(database, "u", "channelAddresses");
+  if (!channelAddresses.includes(normalizedAddress)) {
+    await upsertBlobStringItemFront(database, "u", "channelAddresses", normalizedAddress);
+  }
+  await upsertBlockedChannelToStorage("urls", normalizedAddress);
 }
 
 /**
@@ -287,7 +252,7 @@ async function runUnblockChannels(channel, key) {
     }
   }
 
-  await syncShortsBlockedState(database);
+  await syncShortsBlockedState();
   resetRemoveTagClass();
 
   scheduleRemoveVodThumb();
@@ -305,10 +270,13 @@ async function runContextBlockChannel(videoId) {
     throw new Error("videoId must be a string");
   }
 
-  const videoData = await responseChannelName(normalizedVideoId);
+  hideVideoCardsByVideoId(normalizedVideoId);
+  const cardVideoData = extractChannelDataFromCard(getRecentContextMenuWatchRecommendationCard());
+  const videoData = cardVideoData || await responseChannelName(normalizedVideoId);
   const channelName = String(videoData?.channelName || "").trim();
+  const channelUrl = String(videoData?.channelUrl || "").trim();
 
-  if (!channelName) {
+  if (!channelName && !channelUrl) {
     throw new Error("failed to resolve channel name from videoId");
   }
 
@@ -317,8 +285,14 @@ async function runContextBlockChannel(videoId) {
     blockWatchRecommendationCardsByChannelName(channelName);
     const database = await ensureDatabase();
     await upsertBlockedChannelName(database, channelName);
+    await upsertBlockedChannelAddress(database, channelUrl);
+    await syncShortsBlockedState();
   } else {
-    await runBlockChannels(channelName, "nmes");
+    const database = await ensureDatabase();
+    await upsertBlockedChannelName(database, channelName);
+    await upsertBlockedChannelAddress(database, channelUrl);
+    await syncShortsBlockedState();
+    scheduleRemoveVodThumb();
   }
 
 }
@@ -333,6 +307,7 @@ async function runContextNotInterested(videoId) {
     throw new Error("videoId must be a string");
   }
 
+  hideVideoCardsByVideoId(normalizedVideoId);
   await saveBlockedData(normalizedVideoId, [], "interest");
   scheduleRemoveVodThumb();
 }
@@ -341,13 +316,7 @@ async function runContextNotInterested(videoId) {
  * @returns {Promise<{nmes: string[], urls: string[], links: string[]}>}
  */
 async function getBlockedChannelsForPopup() {
-  const database = await ensureDatabase();
-  const [nmes, urls] = await Promise.all([
-    readBlobStringList(database, "b", "channelNames"),
-    readBlobStringList(database, "u", "channelAddresses"),
-  ]);
-
-  return { nmes, urls, links: [] };
+  return getBlockedChannelsFromStorage();
 }
 
 let isMessageReceiverBound = false;

@@ -1,35 +1,37 @@
 /** @typedef {{ channelName: string, channelUrl: string }} VodData */
 
 /**
- * videoId를 요청보내서 채널명(channelName), 채널주소(channelUrl)를 응답받음
- * @param {string} videoId 채널명, 채널주소를 알아내기 위한 video-id 주소문자열
- * @returns {Promise<VodData|null>} 인자로 받은 videoId로 알아낸 채널명, 채널주소
+ * Resolve a video's channel name and channel URL through YouTube's player API.
+ *
+ * @param {string} videoId
+ * @returns {Promise<VodData|null|undefined>}
  */
 export default async (videoId) => {
   if (!videoId) return;
+
   const response = await fetch("https://www.youtube.com/youtubei/v1/player", {
     body: JSON.stringify({
       context: {
         client: {
           clientName: "WEB",
-          clientVersion: "2.20230327.07.00"
-        }
+          clientVersion: "2.20230327.07.00",
+        },
       },
-      videoId: videoId
+      videoId,
     }),
     headers: {
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
     },
-    method: "POST"
+    method: "POST",
   });
 
   if (response.ok && response.status === 200) {
     const data = await response.json();
-    return { 
+    return {
       channelName: decodeURIComponent(data.videoDetails.author),
-      channelUrl: data.microformat.playerMicroformatRenderer.ownerProfileUrl
-    }
+      channelUrl: data.microformat.playerMicroformatRenderer.ownerProfileUrl,
+    };
   }
 
   return null;
-}
+};

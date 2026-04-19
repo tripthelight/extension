@@ -7,6 +7,7 @@ import responseChannelName from "@/js/channelBlocker/contents/functions/fetch/re
 import getCurrentShortsElement from "@/js/channelBlocker/contents/functions/shortsLogic/getCurrentShortsElement";
 import resetRemoveTagClass from "@/js/channelBlocker/contents/functions/resetRemoveTagClass";
 import { removeBlockedChannelFromStorage } from "@/js/channelBlocker/contents/functions/storage/blockedChannelsStorage";
+import { normalizeChannelAddress } from "@/js/channelBlocker/common/channelAddress";
 
 const OVERLAY_CLASS = "channel-blocker-shorts-overlay";
 const UNDO_LABEL = "\uB418\uB3CC\uB9AC\uAE30";
@@ -46,22 +47,7 @@ function isStaleEvaluation(sequence, videoId) {
  * @returns {string}
  */
 function normalizeChannelHandle(raw) {
-  const value = String(raw || "").trim();
-  if (!value) return "";
-
-  let decoded = value;
-  try {
-    decoded = decodeURIComponent(value);
-  } catch {
-    decoded = value;
-  }
-
-  const matched = decoded.match(/@([^/?#\s]+)/);
-  if (matched && matched[1]) {
-    return matched[1].trim();
-  }
-
-  return decoded.replace(/^\/+/, "").replace(/^@/, "").trim();
+  return normalizeChannelAddress(raw);
 }
 
 /**

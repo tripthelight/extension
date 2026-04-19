@@ -1,40 +1,17 @@
-import { openDB } from "@/js/channelBlocker/contents/database";
-import { readBlobStringList } from "@/js/channelBlocker/contents/functions/database/blobStringListStore";
+import { getBlockedChannelsFromStorage } from "@/js/channelBlocker/contents/functions/storage/blockedChannelsStorage";
+import { normalizeChannelAddress } from "@/js/channelBlocker/common/channelAddress";
 
 /**
- * @param {string} raw
- * @returns {string}
- */
-function normalizeChannelAddress(raw) {
-  const value = String(raw || "").trim();
-  if (!value) return "";
-
-  let decoded = value;
-  try {
-    decoded = decodeURIComponent(value);
-  } catch {
-    decoded = value;
-  }
-
-  const match = decoded.match(/@([^/?#\s]+)/);
-  if (match && match[1]) {
-    return match[1].trim();
-  }
-
-  return decoded.replace(/^\/+/, "").replace(/^@/, "").trim();
-}
-
-/**
- * Read blocked channel addresses from IndexedDB store "u".
- * Returned values are normalized as address token (without '@').
+ * Read blocked channel addresses from the canonical extension storage.
+ *
+ * Returned values are normalized as address tokens without '@'.
  *
  * @returns {Promise<string[]>}
  */
 export default async function getBlockedChannelUrls() {
-  const activeDb = await openDB();
-  const values = await readBlobStringList(activeDb, "u", "channelAddresses");
+  const blockedChannels = await getBlockedChannelsFromStorage();
 
-  return values
+  return blockedChannels.urls
     .map((item) => normalizeChannelAddress(item))
     .filter((item) => item !== "");
 }

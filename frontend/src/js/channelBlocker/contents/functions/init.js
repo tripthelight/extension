@@ -7,7 +7,7 @@ import ReceiveMessage from "@/js/channelBlocker/contents/functions/message/Recei
 import syncBlockedChannelsStorage from "@/js/channelBlocker/contents/functions/syncBlockedChannelsStorage";
 
 /**
- * 콘텐츠 스크립트의 초기화 루틴을 실행합니다.
+ * Initialize the YouTube content-script runtime.
  *
  * @returns {Promise<void>}
  */

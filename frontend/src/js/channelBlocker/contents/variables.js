@@ -44,11 +44,11 @@ const DATAS = {
       path: "/channel/",
       wrap: "ytd-browse",
       list: [
-        // ??
+        // Regular channel-page video cards.
         "ytd-video-renderer",
         "ytd-grid-video-renderer",
         "ytm-shorts-lockup-view-model",
-        // ?숈쁺?? Shorts, ?쇱씠釉?
+        // Newer channel-page cards, including Shorts and live cards.
         "ytd-rich-item-renderer",
       ],
     },
@@ -80,7 +80,6 @@ const DATAS = {
   },
 };
 
-// Shorts ?ъ깮 ?붾㈃
 const SHORTS_TAG = {
   list: ".reel-video-in-sequence-new",
   contents: [

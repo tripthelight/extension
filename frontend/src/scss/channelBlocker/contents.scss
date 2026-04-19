@@ -60,62 +60,7 @@ div.blocking-dummy-elem {
   border: 0 none;
 }
 .channel-blocker-pending {
-  position: relative !important;
-  overflow: hidden !important;
-  border-radius: 8px !important;
-  background: rgba(24, 24, 24, 0.72) !important;
-  isolation: isolate !important;
-  pointer-events: none !important;
-}
-
-.channel-blocker-pending > * {
-  opacity: 0.42 !important;
-  filter: grayscale(0.55) saturate(0.65) !important;
-}
-
-.channel-blocker-pending::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 2147483645;
-  border-radius: inherit;
-  background:
-    linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.06) 48%, transparent 100%),
-    linear-gradient(180deg, rgba(32, 32, 32, 0.46), rgba(12, 12, 12, 0.50));
-  background-size: 220% 100%, 100% 100%;
-  animation: channel-blocker-skeleton-sheen 1.6s ease-in-out infinite;
-}
-
-.channel-blocker-pending::after {
-  content: "Filtering...";
-  position: absolute;
-  left: 12px;
-  bottom: 12px;
-  z-index: 2147483646;
-  box-sizing: border-box;
-  max-width: calc(100% - 24px);
-  min-height: 24px;
-  padding: 4px 9px;
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  border-radius: 8px;
-  color: rgba(255, 255, 255, 0.78);
-  background: rgba(0, 0, 0, 0.42);
-  font-family: "Roboto", "Arial", sans-serif;
-  font-size: 11px;
-  line-height: 16px;
-  font-weight: 500;
-  letter-spacing: 0;
-  backdrop-filter: blur(4px);
-  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.18);
-}
-
-@keyframes channel-blocker-skeleton-sheen {
-  0% {
-    background-position: 130% 0, 0 0;
-  }
-  100% {
-    background-position: -130% 0, 0 0;
-  }
+  display: none !important;
 }
 
 .blocking-recomn {
@@ -135,6 +80,7 @@ div.blocking-dummy-elem {
   display: none !important;
 }
 .blocking-channel {
+  display: none !important;
   opacity: 0 !important;
   width: 0 !important;
   min-width: 0 !important;

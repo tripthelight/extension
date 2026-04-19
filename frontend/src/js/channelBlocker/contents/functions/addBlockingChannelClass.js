@@ -1,5 +1,6 @@
 import hideShortsByVideoId from "@/js/channelBlocker/contents/functions/hideShortsByVideoId";
 import { applyMainShortsBlockingClass } from "@/js/channelBlocker/contents/functions/normalizeMainShortsBlockingClasses";
+import { normalizeChannelAddress } from "@/js/channelBlocker/common/channelAddress";
 
 /**
  * Shorts item
@@ -14,22 +15,7 @@ import { applyMainShortsBlockingClass } from "@/js/channelBlocker/contents/funct
  * @returns {string}
  */
 function normalizeHandle(raw) {
-  const value = String(raw || "").trim();
-  if (!value) return "";
-
-  let decoded = value;
-  try {
-    decoded = decodeURIComponent(value);
-  } catch {
-    decoded = value;
-  }
-
-  const match = decoded.match(/@([^/?#\s]+)/);
-  if (match && match[1]) {
-    return match[1].trim().toLowerCase();
-  }
-
-  return decoded.replace(/^\/+/, "").replace(/^@/, "").trim().toLowerCase();
+  return normalizeChannelAddress(raw).toLowerCase();
 }
 
 /**

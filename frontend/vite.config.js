@@ -4,6 +4,31 @@ import fs from 'node:fs';
 
 const ROOT = __dirname;
 const EXTENSIONS_DIR = path.resolve(ROOT, 'src/extensions');
+const CONSOLE_METHODS_TO_DROP = [
+  'console.assert',
+  'console.clear',
+  'console.count',
+  'console.countReset',
+  'console.debug',
+  'console.dir',
+  'console.dirxml',
+  'console.group',
+  'console.groupCollapsed',
+  'console.groupEnd',
+  'console.info',
+  'console.log',
+  'console.profile',
+  'console.profileEnd',
+  'console.table',
+  'console.time',
+  'console.timeEnd',
+  'console.timeLog',
+  'console.trace',
+  'console.warn',
+];
+const CONSOLE_METHOD_NAMES_TO_DROP = new Set(
+  CONSOLE_METHODS_TO_DROP.map((method) => method.slice('console.'.length))
+);
 
 function normalizePath(p) {
   return p.split(path.sep).join('/');
@@ -60,6 +85,98 @@ function inferExtensionNameFromModuleId(moduleId) {
   return null;
 }
 
+function getConsoleMethodName(callee) {
+  if (!callee || callee.type !== 'MemberExpression') return null;
+  if (!callee.object || callee.object.type !== 'Identifier') return null;
+  if (callee.object.name !== 'console') return null;
+
+  if (!callee.computed && callee.property?.type === 'Identifier') {
+    return callee.property.name;
+  }
+
+  if (callee.computed && callee.property?.type === 'Literal') {
+    return String(callee.property.value || '');
+  }
+
+  return null;
+}
+
+function walkAst(node, visit) {
+  if (!node || typeof node.type !== 'string') return;
+
+  visit(node);
+
+  for (const [key, value] of Object.entries(node)) {
+    if (key === 'start' || key === 'end' || key === 'loc' || key === 'range') continue;
+
+    if (Array.isArray(value)) {
+      value.forEach((child) => walkAst(child, visit));
+      continue;
+    }
+
+    if (value && typeof value.type === 'string') {
+      walkAst(value, visit);
+    }
+  }
+}
+
+function buildConsoleReplacement(code, node) {
+  if (!Array.isArray(node.arguments) || node.arguments.length === 0) {
+    return 'void 0';
+  }
+
+  const argumentsSource = node.arguments
+    .map((arg) => code.slice(arg.start, arg.end))
+    .join(',');
+
+  return `(${argumentsSource},void 0)`;
+}
+
+function stripNonErrorConsoleCalls(code, parse) {
+  const ast = parse(code);
+  const replacements = [];
+
+  walkAst(ast, (node) => {
+    if (node.type !== 'CallExpression') return;
+
+    const methodName = getConsoleMethodName(node.callee);
+    if (!CONSOLE_METHOD_NAMES_TO_DROP.has(methodName)) return;
+
+    replacements.push({
+      start: node.start,
+      end: node.end,
+      source: buildConsoleReplacement(code, node),
+    });
+  });
+
+  if (replacements.length === 0) return code;
+
+  return replacements
+    .sort((a, b) => b.start - a.start)
+    .reduce((result, replacement) => {
+      return result.slice(0, replacement.start) + replacement.source + result.slice(replacement.end);
+    }, code);
+}
+
+function stripNonErrorConsolePlugin() {
+  return {
+    name: 'strip-non-error-console',
+    apply: 'build',
+
+    generateBundle(_, bundle) {
+      for (const item of Object.values(bundle)) {
+        if (item.type === 'chunk') {
+          item.code = stripNonErrorConsoleCalls(item.code, this.parse.bind(this));
+        }
+
+        if (item.type === 'asset' && item.fileName.endsWith('.js') && typeof item.source === 'string') {
+          item.source = stripNonErrorConsoleCalls(item.source, this.parse.bind(this));
+        }
+      }
+    },
+  };
+}
+
 function extensionOutputPlugin() {
   return {
     name: 'extension-output-plugin',
@@ -68,6 +185,7 @@ function extensionOutputPlugin() {
     generateBundle(_, bundle) {
       const popupCssMap = new Map();
       const contentsCssMap = new Map();
+      const contentEntryFiles = new Map();
       const extensionNames = getExtensionNames();
 
       // 1) Entry JS output paths
@@ -91,8 +209,11 @@ function extensionOutputPlugin() {
 
         if (contentsMatch) {
           const importedCss = item.viteMetadata?.importedCss || new Set();
+          const extName = contentsMatch[1];
+
+          contentEntryFiles.set(extName, item.fileName);
+
           for (const cssFile of importedCss) {
-            const extName = contentsMatch[1];
             contentsCssMap.set(cssFile, `${extName}/contents.css`);
           }
         }
@@ -112,7 +233,29 @@ function extensionOutputPlugin() {
         }
       }
 
-      // 3) Emit extension index.html
+      // 3) Emit classic content script wrappers.
+      for (const [extName, moduleFileName] of contentEntryFiles) {
+        const extensionPrefix = `${extName}/`;
+        const runtimeModulePath = moduleFileName.startsWith(extensionPrefix)
+          ? moduleFileName.slice(extensionPrefix.length)
+          : moduleFileName;
+
+        this.emitFile({
+          type: 'asset',
+          fileName: `${extName}/contents.js`,
+          source: [
+            '(() => {',
+            `  const contentScriptUrl = chrome.runtime.getURL(${JSON.stringify(runtimeModulePath)});`,
+            '  import(contentScriptUrl).catch((error) => {',
+            `    console.error(${JSON.stringify(`[${extName}] failed to load content script module`)}, error);`,
+            '  });',
+            '})();',
+            '',
+          ].join('\n'),
+        });
+      }
+
+      // 4) Emit extension index.html
       for (const extName of extensionNames) {
         const srcHtmlPath = path.join(EXTENSIONS_DIR, extName, 'index.html');
         if (!fs.existsSync(srcHtmlPath)) continue;
@@ -136,7 +279,7 @@ function extensionOutputPlugin() {
         });
       }
 
-      // 4) Emit extension manifest.json
+      // 5) Emit extension manifest.json
       for (const extName of extensionNames) {
         const manifestPath = path.join(EXTENSIONS_DIR, extName, 'manifest.json');
         if (!fs.existsSync(manifestPath)) continue;
@@ -150,7 +293,7 @@ function extensionOutputPlugin() {
         });
       }
 
-      // 5) Emit extension static assets (icons/*)
+      // 6) Emit extension static assets (icons/*)
       for (const extName of extensionNames) {
         const iconsDir = path.join(EXTENSIONS_DIR, extName, 'icons');
         if (!fs.existsSync(iconsDir)) continue;
@@ -171,7 +314,7 @@ function extensionOutputPlugin() {
         }
       }
 
-      // 6) Remove unnecessary generated html under src/extensions/*
+      // 7) Remove unnecessary generated html under src/extensions/*
       for (const key of Object.keys(bundle)) {
         if (key.startsWith('src/extensions/') && key.endsWith('/index.html')) {
           delete bundle[key];
@@ -211,7 +354,7 @@ export default defineConfig({
 
           const contentsMatch = name.match(/^(.+)__contents$/);
           if (contentsMatch) {
-            return `${contentsMatch[1]}/contents.js`;
+            return `${contentsMatch[1]}/assets/contents.js`;
           }
 
           const backgroundMatch = name.match(/^(.+)__background$/);
@@ -238,5 +381,5 @@ export default defineConfig({
     },
   },
 
-  plugins: [extensionOutputPlugin()],
+  plugins: [extensionOutputPlugin(), stripNonErrorConsolePlugin()],
 });

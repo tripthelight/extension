@@ -100,18 +100,27 @@ function hideShortsCard(element) {
 }
 
 /**
- * Hide only shorts-card-level nodes for one videoId.
- *
- * @param {string} videoId
- * @returns {number}
+ * @param {HTMLElement} element
+ * @returns {boolean}
  */
-export default function hideShortsByVideoId(videoId) {
-  const normalized = String(videoId || "").trim();
-  if (!normalized) return 0;
+function isHiddenShortsCard(element) {
+  return (
+    element.classList.contains("blocking-channel") ||
+    element.classList.contains("blocking-recomn")
+  );
+}
 
-  const anchors = document.querySelectorAll("a[href*='/shorts/']");
+/**
+ * @param {string} videoId
+ * @returns {Set<HTMLElement>}
+ */
+function findShortsCardsByVideoId(videoId) {
+  const normalized = String(videoId || "").trim();
   const cards = new Set();
 
+  if (!normalized) return cards;
+
+  const anchors = document.querySelectorAll("a[href*='/shorts/']");
   anchors.forEach((anchor) => {
     if (!(anchor instanceof HTMLAnchorElement)) return;
 
@@ -123,6 +132,32 @@ export default function hideShortsByVideoId(videoId) {
       cards.add(card);
     }
   });
+
+  return cards;
+}
+
+/**
+ * @param {string} videoId
+ * @returns {boolean}
+ */
+export function isShortsVideoIdHidden(videoId) {
+  const cards = findShortsCardsByVideoId(videoId);
+  if (cards.size === 0) return false;
+
+  return [...cards].every((card) => isHiddenShortsCard(card));
+}
+
+/**
+ * Hide only shorts-card-level nodes for one videoId.
+ *
+ * @param {string} videoId
+ * @returns {number}
+ */
+export default function hideShortsByVideoId(videoId) {
+  const normalized = String(videoId || "").trim();
+  if (!normalized) return 0;
+
+  const cards = findShortsCardsByVideoId(normalized);
 
   cards.forEach((card) => hideShortsCard(card));
   return cards.size;

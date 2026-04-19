@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "test": "node --test tests/channelBlocker.test.js",
     "preview": "vite preview",
     "build:watch": "vite build --watch",
     "reset": "rmdir /s /q dist"

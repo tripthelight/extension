@@ -1,6 +1,9 @@
 import { getShortsData, saveShortsData, setShortsVideoBlocked } from "@/js/channelBlocker/contents/functions/database/ShortsDataDB";
 import getBlockedChannelNames from "@/js/channelBlocker/contents/functions/database/getBlockedChannelNames";
 import getBlockedChannelUrls from "@/js/channelBlocker/contents/functions/database/getBlockedChannelUrls";
+import { openDB } from "@/js/channelBlocker/contents/database";
+import { upsertBlobStringItemFront } from "@/js/channelBlocker/contents/functions/database/blobStringListStore";
+import { upsertBlockedChannelToStorage } from "@/js/channelBlocker/contents/functions/storage/blockedChannelsStorage";
 
 import {
   getIsFetching,
@@ -10,8 +13,8 @@ import {
 import hideShortsByVideoId from "@/js/channelBlocker/contents/functions/hideShortsByVideoId";
 import {
   clearPendingThumbs,
-  markPendingThumbsByVideoIds,
 } from "@/js/channelBlocker/contents/functions/skeletonPendingThumb";
+import { normalizeChannelAddress } from "@/js/channelBlocker/common/channelAddress";
 
 let responseCount = 0;
 const MISSING_VIDEO_TTL_MS = 1000 * 60 * 30;
@@ -65,22 +68,7 @@ function normalizeChannelName(name) {
  * @returns {string}
  */
 function normalizeChannelHandle(raw) {
-  const value = String(raw || "").trim();
-  if (!value) return "";
-
-  let decoded = value;
-  try {
-    decoded = decodeURIComponent(value);
-  } catch {
-    decoded = value;
-  }
-
-  const match = decoded.match(/@([^/?#\s]+)/);
-  if (match && match[1]) {
-    return match[1].trim().toLowerCase();
-  }
-
-  return decoded.replace(/^\/+/, "").replace(/^@/, "").trim().toLowerCase();
+  return normalizeChannelAddress(raw).toLowerCase();
 }
 
 /**
@@ -103,6 +91,29 @@ function isBlockedChannel(channelName, channelNames, channelHandles = []) {
   return (
     blockedNameSet.has(normalizedName) ||
     (normalizedHandle !== "" && blockedHandleSet.has(normalizedHandle))
+  );
+}
+
+/**
+ * @param {string[]} channelHandles
+ * @returns {Promise<void>}
+ */
+async function rememberBlockedChannelHandles(channelHandles) {
+  const normalizedHandles = [
+    ...new Set(
+      channelHandles
+        .map((handle) => normalizeChannelHandle(handle))
+        .filter((handle) => handle !== "")
+    ),
+  ];
+  if (normalizedHandles.length === 0) return;
+
+  const database = await openDB();
+  await Promise.all(
+    normalizedHandles.map(async (handle) => {
+      await upsertBlobStringItemFront(database, "u", "channelAddresses", handle);
+      await upsertBlockedChannelToStorage("urls", handle);
+    })
   );
 }
 
@@ -223,8 +234,6 @@ export default async (videoIds) => {
     if (idsToFetch.length === 0) {
       return null;
     }
-    markPendingThumbsByVideoIds(idsToFetch);
-
     const requestKey = [...idsToFetch].sort().join(",");
     const now = Date.now();
     if (
@@ -276,6 +285,8 @@ export default async (videoIds) => {
 
       /** @type {ShortsSaveDataMap} */
       const nextShortsData = {};
+      /** @type {string[]} */
+      const discoveredBlockedHandles = [];
 
       for (const item of items) {
         const videoId = item.videoId;
@@ -291,6 +302,10 @@ export default async (videoIds) => {
           channelHandle,
           blocked,
         };
+
+        if (blocked && channelHandle) {
+          discoveredBlockedHandles.push(channelHandle);
+        }
       }
 
       for (const videoId of missing) {
@@ -306,6 +321,7 @@ export default async (videoIds) => {
         ...knownVideos,
         ...nextShortsData,
       };
+      await rememberBlockedChannelHandles(discoveredBlockedHandles);
       await saveShortsData(mergedShortsData);
       clearPendingThumbs(idsToFetch);
 

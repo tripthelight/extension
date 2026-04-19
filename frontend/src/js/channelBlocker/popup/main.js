@@ -6,6 +6,7 @@ import {
   removeBlockedChannelFromStorage,
   upsertBlockedChannelToStorage,
 } from "@/js/channelBlocker/storage/blockedChannelsStorage";
+import { normalizeChannelAddress } from "@/js/channelBlocker/common/channelAddress";
 
 function findExtStorage() {
   const extStorage =
@@ -163,48 +164,6 @@ async function removeDbStringItem(storeName, key, value) {
   const nextValues = current.filter((item) => item !== normalized);
   await writeDbStringList(storeName, key, nextValues);
   return nextValues;
-}
-
-/**
- * popup-only channel address normalizer.
- * @param {string} raw
- * @returns {string}
- */
-function normalizeChannelAddress(raw) {
-  const value = String(raw || "").trim();
-  if (!value) return "";
-
-  let decoded = value;
-  try {
-    decoded = decodeURIComponent(value);
-  } catch {
-    decoded = value;
-  }
-
-  const sources = [decoded];
-
-  try {
-    const parsed = /^https?:\/\//i.test(decoded)
-      ? new URL(decoded)
-      : new URL(decoded, "https://www.youtube.com");
-
-    sources.push(parsed.pathname);
-  } catch {
-    // ignore invalid URL string
-  }
-
-  for (const source of sources) {
-    const matched = String(source || "").match(/@([^/?#&\s]+)/);
-    if (matched && matched[1]) {
-      return matched[1].trim();
-    }
-  }
-
-  const withoutQuery = decoded.split(/[?#&]/)[0] || "";
-  const withoutOrigin = withoutQuery.replace(/^https?:\/\/[^/]+/i, "");
-  const firstSegment = withoutOrigin.replace(/^\/+/, "").split("/")[0] || "";
-
-  return firstSegment.replace(/^@/, "").trim();
 }
 
 async function migratePopupDatabaseToStorage() {

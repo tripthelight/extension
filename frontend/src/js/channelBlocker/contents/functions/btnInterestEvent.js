@@ -2,6 +2,7 @@ import { isDatabaseClosingError, openDB } from "@/js/channelBlocker/contents/dat
 import { saveBlockedData } from "@/js/channelBlocker/contents/functions/findChannelName";
 import { addBlockingRecommendClass as removeInterestThumb } from "@/js/channelBlocker/contents/functions/removeInterestThumb";
 import dummyElementClick from "@/js/channelBlocker/contents/functions/dummyElementClick";
+import hideVideoCardsByVideoId from "@/js/channelBlocker/contents/functions/hideVideoCardsByVideoId";
 import { openWatchUndoOverlay } from "@/js/channelBlocker/contents/functions/watchUndoOverlay";
 import enforceShortsUndoOverlay from "@/js/channelBlocker/contents/functions/shortsUndoOverlay";
 import resetRemoveTagClass from "@/js/channelBlocker/contents/functions/resetRemoveTagClass";
@@ -193,7 +194,9 @@ export async function handleInterestClick(event) {
   const videoId = getVideoIdFromEvent(event);
   if (!videoId) return;
 
+  hideVideoCardsByVideoId(videoId);
   markPendingThumbsByVideoIds([videoId]);
+  dummyElementClick();
 
   let isNewlyAdded = false;
   const value = await executeWithDbRecovery((database) => readVideoIdsValue(database));
@@ -201,18 +204,15 @@ export async function handleInterestClick(event) {
   if (!value) {
     await saveBlockedData(videoId, [], "interest");
     isNewlyAdded = true;
-    dummyElementClick();
   } else {
     const videoIds = await parseVideoIdsValue(value);
 
     if (hasVideoId(videoIds, videoId)) {
       clearPendingThumbs([videoId]);
       removeInterestThumb();
-      dummyElementClick();
     } else {
       await saveBlockedData(videoId, videoIds, "interest");
       isNewlyAdded = true;
-      dummyElementClick();
     }
   }
 

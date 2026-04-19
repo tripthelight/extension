@@ -4,8 +4,6 @@ import { runChannelBlocker as removeBlockerThumb } from "@/js/channelBlocker/con
 import enforceWatchUndoOverlay from "@/js/channelBlocker/contents/functions/enforceWatchUndoOverlay";
 import normalizeMainShortsBlockingClasses from "@/js/channelBlocker/contents/functions/normalizeMainShortsBlockingClasses";
 
-const REMOVE_VOD_THUMB_DELAY_MS = 120;
-
 /**
  * @typedef {object} ChannelBlockerState
  * @property {number|null} removeVodThumbRaf
@@ -46,15 +44,15 @@ export default () => {
   const runtime = getRuntime();
 
   if (runtime.removeVodThumbRaf !== null) {
-    clearTimeout(runtime.removeVodThumbRaf);
+    cancelAnimationFrame(runtime.removeVodThumbRaf);
   }
 
-  const timerId = window.setTimeout(() => {
+  const rafId = window.requestAnimationFrame(() => {
     flushVodThumbRemoval().catch((error) => {
       console.warn(error);
       setRuntime({ removeVodThumbRaf: null });
     });
-  }, REMOVE_VOD_THUMB_DELAY_MS);
+  });
 
-  setRuntime({ removeVodThumbRaf: timerId });
+  setRuntime({ removeVodThumbRaf: rafId });
 };

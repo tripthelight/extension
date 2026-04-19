@@ -6,7 +6,10 @@ import {
 import resetRemoveTagClass from "@/js/channelBlocker/contents/functions/resetRemoveTagClass";
 import scheduleRemoveVodThumb from "@/js/channelBlocker/contents/functions/scheduleRemoveVodThumb";
 import { t } from "@/js/channelBlocker/contents/i18n";
-import { removeBlockedChannelFromStorage } from "@/js/channelBlocker/contents/functions/storage/blockedChannelsStorage";
+import {
+  getBlockedChannelsFromStorage,
+  removeBlockedChannelFromStorage,
+} from "@/js/channelBlocker/contents/functions/storage/blockedChannelsStorage";
 
 const OVERLAY_CLASS = "channel-blocker-list-overlay";
 const OVERLAY_PANEL_CLASS = "channel-blocker-list-overlay__panel";
@@ -167,7 +170,7 @@ export async function openBlockedChannelListOverlay() {
   const { body } = createOverlayFrame(t("menu.blocked_channel_list"));
 
   const render = async () => {
-    const channelNames = await readList("b", "channelNames");
+    const { nmes: channelNames } = await getBlockedChannelsFromStorage();
     body.innerHTML = "";
 
     if (channelNames.length === 0) {

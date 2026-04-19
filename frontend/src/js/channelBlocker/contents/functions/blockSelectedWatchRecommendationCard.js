@@ -1,4 +1,9 @@
 import { getRecentContextMenuWatchRecommendationCard } from "@/js/channelBlocker/contents/functions/contextMenuTargetStore";
+import extractChannelDataFromCard from "@/js/channelBlocker/contents/functions/extractChannelDataFromCard";
+import {
+  buildBlockedChannelMatcher,
+  isBlockedChannelData,
+} from "@/js/channelBlocker/common/channelBlockMatcher";
 
 const WATCH_RECOMMEND_CARD_SELECTOR = "yt-lockup-view-model";
 const WATCH_SHORTS_CARD_SELECTOR = "ytm-shorts-lockup-view-model-v2.shortsLockupViewModelHost";
@@ -145,6 +150,7 @@ function blockWatchRecommendationCardsByChannelName(channelName) {
 
   let blockedCount = 0;
   const cards = getWatchCards();
+  const matcher = buildBlockedChannelMatcher([normalizedChannelName], []);
 
   cards.forEach((card) => {
     if (
@@ -154,8 +160,7 @@ function blockWatchRecommendationCardsByChannelName(channelName) {
       return;
     }
 
-    const text = card.textContent?.trim() ?? "";
-    if (!text.includes(normalizedChannelName)) return;
+    if (!isBlockedChannelData(extractChannelDataFromCard(card), matcher)) return;
 
     applyWatchCardBlockingClass(card);
     blockedCount += 1;

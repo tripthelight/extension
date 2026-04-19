@@ -5,27 +5,23 @@ import removeBlockerThumbChannelPage from "@/js/channelBlocker/contents/function
 import getShortsVideoIds from "@/js/channelBlocker/contents/functions/getShortsVideoIds";
 import responseShortsData from "@/js/channelBlocker/contents/functions/fetch/responseShortsData";
 import addBlockingChannelClass from "@/js/channelBlocker/contents/functions/addBlockingChannelClass";
-import hideShortsByVideoId from "@/js/channelBlocker/contents/functions/hideShortsByVideoId";
+import hideShortsByVideoId, {
+  isShortsVideoIdHidden,
+} from "@/js/channelBlocker/contents/functions/hideShortsByVideoId";
 import getBlockedChannelNames from "@/js/channelBlocker/contents/functions/database/getBlockedChannelNames";
 import getBlockedChannelUrls from "@/js/channelBlocker/contents/functions/database/getBlockedChannelUrls";
 import { getShortsData } from "@/js/channelBlocker/contents/functions/database/ShortsDataDB";
 import { applyMainShortsBlockingClass } from "@/js/channelBlocker/contents/functions/normalizeMainShortsBlockingClasses";
+import extractChannelDataFromCard from "@/js/channelBlocker/contents/functions/extractChannelDataFromCard";
+import {
+  buildBlockedChannelMatcher,
+  isBlockedChannelData,
+} from "@/js/channelBlocker/common/channelBlockMatcher";
 
-/**
- * @param {string} href
- * @returns {string}
- */
-function extractChannelAddressFromHref(href) {
-  let decoded = String(href || "");
-  try {
-    decoded = decodeURIComponent(decoded);
-  } catch {
-    decoded = String(href || "");
-  }
-
-  const matched = decoded.match(/@([^/?#\s]+)/);
-  return matched && matched[1] ? matched[1].trim() : "";
-}
+const BROAD_CONTAINER_SELECTORS = [
+  ".ytGridShelfViewModelGridShelfRow",
+  "ytd-rich-item-renderer.ytd-rich-shelf-renderer",
+];
 
 /**
  * @typedef {Object} ShortsItem
@@ -43,37 +39,6 @@ function isChannelPage() {
     location.pathname.startsWith("/@") ||
     location.pathname.startsWith("/channel/")
   );
-}
-
-/**
- * @param {string} value
- * @returns {string}
- */
-function normalizeLower(value) {
-  return String(value || "").trim().toLowerCase();
-}
-
-/**
- * @param {string} value
- * @returns {string}
- */
-function normalizeHandle(value) {
-  const raw = String(value || "").trim();
-  if (!raw) return "";
-
-  let decoded = raw;
-  try {
-    decoded = decodeURIComponent(raw);
-  } catch {
-    decoded = raw;
-  }
-
-  const matched = decoded.match(/@([^/?#\s]+)/);
-  if (matched && matched[1]) {
-    return matched[1].trim().toLowerCase();
-  }
-
-  return decoded.replace(/^\/+/, "").replace(/^@/, "").trim().toLowerCase();
 }
 
 /**
@@ -119,6 +84,14 @@ function isWatchShortsCard(item) {
 }
 
 /**
+ * @param {HTMLElement} item
+ * @returns {boolean}
+ */
+function isBroadContainer(item) {
+  return BROAD_CONTAINER_SELECTORS.some((selector) => item.matches(selector));
+}
+
+/**
  * @param {string[]} channelNames
  * @param {string[]} channelHandles
  * @returns {void}
@@ -126,34 +99,15 @@ function isWatchShortsCard(item) {
 function blockLongFormItems(channelNames, channelHandles) {
   const listSelector = LIST_TAG.join(",");
   const items = document.querySelectorAll(listSelector);
-  const blockedHandles = new Set(
-    channelHandles
-      .map((handle) => String(handle || "").trim())
-      .filter((handle) => handle !== "")
-  );
+  const matcher = buildBlockedChannelMatcher(channelNames, channelHandles);
 
   for (const item of items) {
     if (!(item instanceof HTMLElement)) continue;
+    if (isBroadContainer(item)) continue;
     if (isMainShortsInnerItem(item)) continue;
 
-    const text = item.textContent?.trim() ?? "";
-
-    const hasChannelName = channelNames.some((channelName) =>
-      text.includes(channelName)
-    );
-
-    let hasChannelHandle = false;
-    if (blockedHandles.size > 0) {
-      const anchors = item.querySelectorAll("a[href]");
-      hasChannelHandle = Array.from(anchors).some((anchor) => {
-        const href = anchor.getAttribute("href") || "";
-        const address = extractChannelAddressFromHref(href);
-        if (!address) return false;
-        return blockedHandles.has(address);
-      });
-    }
-
-    if (hasChannelName || hasChannelHandle) {
+    const channelData = extractChannelDataFromCard(item);
+    if (isBlockedChannelData(channelData, matcher)) {
       item.classList.remove("channel-blocker-pending");
 
       if (isWatchShortsCard(item)) {
@@ -187,23 +141,21 @@ async function blockShortsItems(channelNames, channelHandles) {
   let shortsData = [];
 
   const knownVideos = await getShortsData();
-  const blockedNameSet = new Set(channelNames.map((name) => normalizeLower(name)));
-  const blockedHandleSet = new Set(
-    channelHandles
-      .map((handle) => normalizeHandle(handle))
-      .filter((handle) => handle !== "")
-  );
+  const matcher = buildBlockedChannelMatcher(channelNames, channelHandles);
 
   for (const videoId of shortsVideoIds) {
     const known = knownVideos[videoId];
     if (!known) continue;
 
-    const byName = blockedNameSet.has(normalizeLower(known.channelName));
-    const byHandle = known.channelHandle
-      ? blockedHandleSet.has(normalizeHandle(known.channelHandle))
-      : false;
+    const blockedByRule = isBlockedChannelData(
+      {
+        channelName: known.channelName,
+        channelHandle: known.channelHandle,
+      },
+      matcher
+    );
 
-    if (known.blocked || byName || byHandle) {
+    if (known.blocked || blockedByRule) {
       hideShortsByVideoId(videoId);
       shortsData.push({
         videoId,
@@ -213,16 +165,20 @@ async function blockShortsItems(channelNames, channelHandles) {
     }
   }
 
-  const fetched = await responseShortsData(shortsVideoIds);
+  addBlockingChannelClass(channelNames, shortsData, channelHandles);
+
+  const idsToResolve = shortsVideoIds.filter(
+    (videoId) => !isShortsVideoIdHidden(videoId)
+  );
+  const fetched = await responseShortsData(idsToResolve);
   if (Array.isArray(fetched) && fetched.length > 0) {
     const byVideoId = new Map(shortsData.map((item) => [item.videoId, item]));
     fetched.forEach((item) => {
       byVideoId.set(item.videoId, item);
     });
     shortsData = [...byVideoId.values()];
+    addBlockingChannelClass(channelNames, shortsData, channelHandles);
   }
-
-  addBlockingChannelClass(channelNames, shortsData, channelHandles);
 }
 
 export async function runChannelBlocker() {

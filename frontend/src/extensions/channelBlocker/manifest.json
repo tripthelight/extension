@@ -25,5 +25,11 @@
       ],
       "css": ["contents.css"]
     }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["assets/*.js"],
+      "matches": ["https://*.youtube.com/*"]
+    }
   ]
 }
