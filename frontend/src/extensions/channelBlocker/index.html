@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Youtube Channel Ban</title>
+    <link rel="stylesheet" href="./scss/style.scss" />
+  </head>
+  <body>
+    <div id="container" class="blocking-channel">
+      <h3 data-i18n="popup.channel_name_title">채널명 입력</h3>
+      <div class="ipt-wrap">
+        <label for="FOBIDDEN_WORD" data-i18n="popup.channel_name_help">아래 입력창에 입력한 채널명은 노출되지 않습니다.</label>
+        <div class="ipt-block">
+          <input type="text" name="FOBIDDEN_WORD" id="FOBIDDEN_WORD" placeholder="채널명 입력" data-i18n-placeholder="popup.channel_name_placeholder" />
+          <button type="button" class="btn-del btn-word-del hide" aria-label="클릭 시 현재 작성된 채널명 삭제함" data-i18n-aria-label="popup.channel_name_delete_aria"></button>
+          <button type="button" class="btn-add btn-word-add" data-i18n="popup.add">추가</button>
+        </div>
+      </div>
+      <div class="list list-word"></div>
+      
+      <h3 data-i18n="popup.channel_url_title">채널 주소 입력</h3>
+      <div class="ipt-wrap">
+        <label for="FOBIDDEN_URL" data-i18n="popup.channel_url_help">아래 입력창에 입력한 채널 주소는 노출되지 않습니다.</label>
+        <div class="ipt-block">
+          <input type="text" name="FOBIDDEN_URL" id="FOBIDDEN_URL" placeholder="채널주소 입력 ex. '/@aaa' or '@aaa'" data-i18n-placeholder="popup.channel_url_placeholder" />
+          <button type="button" class="btn-del btn-url-del hide" aria-label="클릭 시 현재 작성된 채널 주소 삭제함" data-i18n-aria-label="popup.channel_url_delete_aria"></button>
+          <button type="button" class="btn-add btn-url-add" data-i18n="popup.add">추가</button>
+        </div>
+      </div>
+      <div class="list list-url"></div>
+
+      <div id="blocked-overlay" class="blocked-overlay" aria-hidden="true">
+        <div class="overlay-panel" role="dialog" aria-modal="true" aria-label="차단 목록 상세" data-i18n-aria-label="popup.overlay_detail_aria">
+          <div class="overlay-head">
+            <h4 class="overlay-title" data-i18n="popup.block_list_title">차단 목록</h4>
+            <button type="button" class="overlay-close" aria-label="닫기" data-i18n-aria-label="popup.close" data-i18n="popup.close">닫기</button>
+          </div>
+          <ul class="overlay-list"></ul>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="./js/script.js"></script>
+  </body>
+</html>

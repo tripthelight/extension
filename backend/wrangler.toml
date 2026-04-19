@@ -1,0 +1,34 @@
+name = "twilight-cherry-8d84"
+main = "worker.js"
+compatibility_date = "2026-04-18"
+
+[observability]
+enabled = true
+
+[vars]
+WORKER_ENABLED = "true"
+REQUIRE_ALLOWED_ORIGIN = "true"
+DAILY_YOUTUBE_FETCH_LIMIT = "1000"
+MAX_VIDEO_IDS_PER_REQUEST = "50"
+CHALLENGE_REQUIRED = "true"
+CHALLENGE_TTL_SECONDS = "60"
+
+[[kv_namespaces]]
+binding = "CACHE_KV"
+id = "2effbc8e9bbb4cbbbb696fdbe228f91d"
+
+[[ratelimits]]
+name = "GLOBAL_RATE_LIMITER"
+namespace_id = "1001"
+
+  [ratelimits.simple]
+  limit = 60
+  period = 60
+
+[[ratelimits]]
+name = "RESOLVE_RATE_LIMITER"
+namespace_id = "1002"
+
+  [ratelimits.simple]
+  limit = 30
+  period = 60
